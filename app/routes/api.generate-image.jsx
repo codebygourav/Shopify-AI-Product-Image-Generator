@@ -5,14 +5,23 @@ import { generateAiImage } from "../services/openai-images.server";
 import { moderatePrompt } from "../services/moderation.server";
 import { getOrCreateCustomer, getOrCreateShop } from "../services/shops.server";
 import { attachImageToProduct } from "../services/shopify-media.server";
+import { corsJson, optionsResponse } from "../services/cors.server";
+
+export async function loader() {
+  return optionsResponse();
+}
 
 export async function action({ request }) {
+  if (request.method === "OPTIONS") return optionsResponse();
+
   try {
     const body = await request.json();
     const {
       prompt,
       productId,
       productHandle,
+      variantId,
+      variantTitle,
       customerId,
       customerEmail,
       visibility = "PRIVATE",
@@ -20,7 +29,7 @@ export async function action({ request }) {
     } = body;
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length < 3) {
-      return json({ success: false, error: "Prompt is required." }, { status: 400 });
+      return corsJson({ success: false, error: "Prompt is required." }, { status: 400 });
     }
 
     let admin = null;
@@ -39,7 +48,7 @@ export async function action({ request }) {
     }
 
     if (!shopDomain) {
-      return json(
+      return corsJson(
         { success: false, error: "Shop domain is required." },
         { status: 401 },
       );
@@ -52,6 +61,26 @@ export async function action({ request }) {
       email: customerEmail,
     });
 
+    if (customer?.isApproved === false) {
+        return corsJson(
+          { success: false, error: "Your account is waiting for approval." },
+          { status: 403 },
+        );
+    }
+
+    const customerLimit = customer?.generationLimit;
+    if (customer && Number.isInteger(customerLimit)) {
+      const used = await prisma.aiImageGeneration.count({
+        where: { shopId: shop.id, customerId: customer.id },
+      });
+      if (used >= customerLimit) {
+        return corsJson(
+          { success: false, error: "Your image generation limit has been reached." },
+          { status: 403 },
+        );
+      }
+    }
+
     const db = prisma;
     const generation = await db.aiImageGeneration.create({
       data: {
@@ -59,6 +88,8 @@ export async function action({ request }) {
         customerId: customer?.id,
         productId,
         productHandle,
+        variantId,
+        variantTitle,
         prompt: prompt.trim(),
         visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
         status: "PROCESSING",
@@ -77,7 +108,7 @@ export async function action({ request }) {
         },
       });
 
-      return json(
+      return corsJson(
         { success: false, error: moderation.reason, generation: blocked },
         { status: 422 },
       );
@@ -105,10 +136,12 @@ export async function action({ request }) {
         status: "COMPLETED",
         moderationStatus: "APPROVED",
         openAiRequestId: image.requestId,
-        metadata: {
+        metadata: JSON.stringify({
           productHandle,
+          variantId,
+          variantTitle,
           mediaUpload: media,
-        },
+        }),
       },
     });
 
@@ -123,7 +156,7 @@ export async function action({ request }) {
       },
     });
 
-    return json({
+    return corsJson({
       success: true,
       generation: saved,
       image: saved.imageUrl,
@@ -131,7 +164,7 @@ export async function action({ request }) {
     });
   } catch (error) {
     console.error("Image generation failed", error);
-    return json({
+    return corsJson({
       success: false,
       error: error.message,
     }, { status: 500 });

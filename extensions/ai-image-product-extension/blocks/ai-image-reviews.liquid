@@ -1,0 +1,59 @@
+{{ 'ai-image-manager.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
+
+<section
+  class="aim-reviews"
+  data-ai-reviews
+  data-api-base="{{ block.settings.api_base_url }}"
+  data-shop="{{ shop.permanent_domain }}"
+  data-product-id="{% if product %}{% if product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% else %}gid://shopify/Product/{{ product.id }}{% endif %}{% endif %}"
+  data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
+  data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
+>
+  <div class="aim-section-head">
+    <div>
+      <p class="aim-eyebrow">{{ block.settings.eyebrow }}</p>
+      <h2 class="aim-heading">{{ block.settings.heading }}</h2>
+    </div>
+  </div>
+  <div class="aim-review-list" data-ai-review-list></div>
+  <form class="aim-review-form" data-ai-review-form>
+    <select name="generationId" data-ai-review-image></select>
+    <select name="rating">
+      <option value="5">5 stars</option>
+      <option value="4">4 stars</option>
+      <option value="3">3 stars</option>
+      <option value="2">2 stars</option>
+      <option value="1">1 star</option>
+    </select>
+    <textarea name="comment" rows="3" placeholder="Write a review"></textarea>
+    <button type="submit" class="aim-button aim-button--primary">Submit review</button>
+    <p class="aim-status" data-ai-review-status></p>
+  </form>
+</section>
+
+{% schema %}
+{
+  "name": "AI image reviews",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Community reviews"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Reviews for generated images"
+    },
+    {
+      "type": "url",
+      "id": "api_base_url",
+      "label": "App API base URL"
+    }
+  ]
+}
+{% endschema %}

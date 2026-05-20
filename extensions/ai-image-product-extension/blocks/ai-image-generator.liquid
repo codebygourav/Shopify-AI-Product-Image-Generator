@@ -2,53 +2,108 @@
 <script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
 
 <div
-  class="ai-image-manager"
+  class="aim-product-studio"
   data-ai-image-generator
   data-api-base="{{ block.settings.api_base_url }}"
   data-shop="{{ shop.permanent_domain }}"
-  data-product-id="{{ product.admin_graphql_api_id }}"
+  data-product-id="{% if product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% else %}gid://shopify/Product/{{ product.id }}{% endif %}"
   data-product-handle="{{ product.handle }}"
+  data-product-title="{{ product.title | escape }}"
   data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
 >
-  <label class="ai-image-manager__label" for="ai-image-prompt-{{ block.id }}">
-    {{ block.settings.heading }}
-  </label>
-  <textarea
-    id="ai-image-prompt-{{ block.id }}"
-    class="ai-image-manager__textarea"
-    rows="4"
-    placeholder="{{ block.settings.placeholder }}"
-  ></textarea>
-  <div class="ai-image-manager__actions">
-    <button class="ai-image-manager__button" type="button" data-ai-generate>
-      {{ block.settings.button_label }}
-    </button>
-    <label class="ai-image-manager__checkbox">
-      <input type="checkbox" data-ai-public>
-      Show in public gallery
-    </label>
+  <div class="aim-product-studio__media">
+    <div class="aim-product-studio__preview" data-ai-preview>
+      <div class="aim-product-studio__empty">
+        <span>{{ block.settings.preview_label }}</span>
+      </div>
+    </div>
   </div>
-  <p class="ai-image-manager__status" data-ai-status></p>
-  <div class="ai-image-manager__preview" data-ai-preview hidden></div>
+
+  <div class="aim-product-studio__panel">
+    <p class="aim-eyebrow">{{ block.settings.eyebrow }}</p>
+    <h2 class="aim-heading">{{ block.settings.heading }}</h2>
+    <p class="aim-copy">{{ block.settings.description }}</p>
+
+    <div class="aim-variant-summary">
+      <span>Selected product</span>
+      <strong data-ai-variant-label>{{ product.selected_or_first_available_variant.title }}</strong>
+    </div>
+
+    <label class="aim-field">
+      <span>Art direction</span>
+      <textarea
+        class="aim-textarea"
+        rows="4"
+        data-ai-prompt
+        placeholder="{{ block.settings.placeholder }}"
+      ></textarea>
+    </label>
+
+    <div class="aim-prompt-tools">
+      <button type="button" class="aim-chip" data-ai-template="minimal gallery wall, premium print art, soft natural light">
+        Minimal wall art
+      </button>
+      <button type="button" class="aim-chip" data-ai-template="bold abstract print, textured brushwork, curated interior styling">
+        Abstract print
+      </button>
+      <button type="button" class="aim-chip" data-ai-template="calm spiritual artwork, refined color palette, elegant framed print">
+        Spiritual art
+      </button>
+    </div>
+
+    <label class="aim-checkbox">
+      <input type="checkbox" data-ai-public>
+      Add approved image to community gallery
+    </label>
+
+    <div class="aim-actions">
+      <button class="aim-button aim-button--primary" type="button" data-ai-generate>
+        {{ block.settings.button_label }}
+      </button>
+      <button class="aim-button" type="button" data-ai-select hidden>
+        Use this image for checkout
+      </button>
+    </div>
+
+    <p class="aim-status" data-ai-status></p>
+  </div>
 </div>
 
 {% schema %}
 {
-  "name": "AI image generator",
+  "name": "AI product image studio",
   "target": "section",
   "settings": [
     {
       "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Custom AI artwork"
+    },
+    {
+      "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Create an AI product image"
+      "default": "Create your print before checkout"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Choose your product variant, describe the artwork, generate a preview, then attach the selected image to your cart item."
+    },
+    {
+      "type": "text",
+      "id": "preview_label",
+      "label": "Empty preview label",
+      "default": "Your generated image will appear here"
     },
     {
       "type": "text",
       "id": "placeholder",
       "label": "Prompt placeholder",
-      "default": "Describe the image you want to generate"
+      "default": "Example: warm abstract botanical artwork for a walnut frame"
     },
     {
       "type": "text",

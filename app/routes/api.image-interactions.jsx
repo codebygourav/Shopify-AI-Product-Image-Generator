@@ -1,13 +1,16 @@
 import { json } from "@remix-run/node";
 import prisma from "../db.server";
 import { getOrCreateCustomer, getOrCreateShop } from "../services/shops.server";
+import { corsJson, optionsResponse } from "../services/cors.server";
 
 export async function action({ request }) {
+  if (request.method === "OPTIONS") return optionsResponse();
+
   const body = await request.json();
   const { shop: shopDomain, generationId, customerId, customerEmail, type, rating, comment } = body;
 
   if (!shopDomain || !generationId || !type) {
-    return json({ success: false, error: "shop, generationId, and type are required" }, { status: 400 });
+    return corsJson({ success: false, error: "shop, generationId, and type are required" }, { status: 400 });
   }
 
   const shop = await getOrCreateShop(shopDomain);
@@ -18,7 +21,7 @@ export async function action({ request }) {
   });
 
   if (type === "like") {
-    if (!customer) return json({ success: false, error: "Customer is required for likes" }, { status: 401 });
+    if (!customer) return corsJson({ success: false, error: "Customer is required for likes" }, { status: 401 });
     const db = prisma;
     await db.imageLike.upsert({
       where: { generationId_customerId: { generationId, customerId: customer.id } },
@@ -46,5 +49,5 @@ export async function action({ request }) {
     });
   }
 
-  return json({ success: true });
+  return corsJson({ success: true });
 }

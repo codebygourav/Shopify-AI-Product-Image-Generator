@@ -1,10 +1,3 @@
 name = "AI Image Product Extension"
 type = "theme"
-
-[[extensions.targeting]]
-target = "section"
-module = "./blocks/ai-image-generator.liquid"
-
-[[extensions.targeting]]
-target = "section"
-module = "./blocks/ai-image-gallery.liquid"
+uid = "95369fd4-8ddc-1a46-cfbb-b4beba31ddd814ed5c0f"
