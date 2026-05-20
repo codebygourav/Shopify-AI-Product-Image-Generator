@@ -1,0 +1,33 @@
+{{ 'ai-image-manager.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
+
+<div
+  class="ai-image-gallery"
+  data-ai-gallery
+  data-api-base="{{ block.settings.api_base_url }}"
+  data-shop="{{ shop.permanent_domain }}"
+>
+  <h2 class="ai-image-gallery__heading">{{ block.settings.heading }}</h2>
+  <div class="ai-image-gallery__grid" data-ai-gallery-grid></div>
+</div>
+
+{% schema %}
+{
+  "name": "AI public gallery",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Community AI gallery"
+    },
+    {
+      "type": "url",
+      "id": "api_base_url",
+      "label": "App API base URL",
+      "info": "Use your app URL during development, or your Shopify app proxy URL in production."
+    }
+  ]
+}
+{% endschema %}

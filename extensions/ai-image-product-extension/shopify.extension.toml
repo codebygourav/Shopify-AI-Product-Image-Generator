@@ -1,0 +1,10 @@
+name = "AI Image Product Extension"
+type = "theme"
+
+[[extensions.targeting]]
+target = "section"
+module = "./blocks/ai-image-generator.liquid"
+
+[[extensions.targeting]]
+target = "section"
+module = "./blocks/ai-image-gallery.liquid"

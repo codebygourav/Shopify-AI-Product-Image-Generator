@@ -1,0 +1,67 @@
+{{ 'ai-image-manager.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
+
+<div
+  class="ai-image-manager"
+  data-ai-image-generator
+  data-api-base="{{ block.settings.api_base_url }}"
+  data-shop="{{ shop.permanent_domain }}"
+  data-product-id="{{ product.admin_graphql_api_id }}"
+  data-product-handle="{{ product.handle }}"
+  data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
+  data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
+>
+  <label class="ai-image-manager__label" for="ai-image-prompt-{{ block.id }}">
+    {{ block.settings.heading }}
+  </label>
+  <textarea
+    id="ai-image-prompt-{{ block.id }}"
+    class="ai-image-manager__textarea"
+    rows="4"
+    placeholder="{{ block.settings.placeholder }}"
+  ></textarea>
+  <div class="ai-image-manager__actions">
+    <button class="ai-image-manager__button" type="button" data-ai-generate>
+      {{ block.settings.button_label }}
+    </button>
+    <label class="ai-image-manager__checkbox">
+      <input type="checkbox" data-ai-public>
+      Show in public gallery
+    </label>
+  </div>
+  <p class="ai-image-manager__status" data-ai-status></p>
+  <div class="ai-image-manager__preview" data-ai-preview hidden></div>
+</div>
+
+{% schema %}
+{
+  "name": "AI image generator",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Create an AI product image"
+    },
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "Prompt placeholder",
+      "default": "Describe the image you want to generate"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Generate image"
+    },
+    {
+      "type": "url",
+      "id": "api_base_url",
+      "label": "App API base URL",
+      "info": "Use your app URL during development, or your Shopify app proxy URL in production."
+    }
+  ]
+}
+{% endschema %}

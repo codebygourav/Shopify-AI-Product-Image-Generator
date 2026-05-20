@@ -52,7 +52,8 @@ export async function action({ request }) {
       email: customerEmail,
     });
 
-    const generation = await prisma.aiImageGeneration.create({
+    const db = prisma;
+    const generation = await db.aiImageGeneration.create({
       data: {
         shopId: shop.id,
         customerId: customer?.id,
@@ -67,7 +68,7 @@ export async function action({ request }) {
 
     const moderation = await moderatePrompt(prompt);
     if (!moderation.allowed) {
-      const blocked = await prisma.aiImageGeneration.update({
+      const blocked = await db.aiImageGeneration.update({
         where: { id: generation.id },
         data: {
           status: "BLOCKED",
@@ -96,7 +97,7 @@ export async function action({ request }) {
       });
     }
 
-    const saved = await prisma.aiImageGeneration.update({
+    const saved = await db.aiImageGeneration.update({
       where: { id: generation.id },
       data: {
         imageUrl: image.imageUrl,
@@ -111,7 +112,7 @@ export async function action({ request }) {
       },
     });
 
-    await prisma.openAiUsageLog.create({
+    await db.openAiUsageLog.create({
       data: {
         shopId: shop.id,
         generationId: saved.id,

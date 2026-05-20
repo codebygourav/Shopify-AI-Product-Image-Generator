@@ -1,7 +1,8 @@
 import prisma from "../db.server";
 
 export async function getOrCreateShop(shopDomain) {
-  return prisma.shop.upsert({
+  const db = prisma;
+  return db.shop.upsert({
     where: { shop: shopDomain },
     update: {},
     create: {
@@ -18,7 +19,8 @@ export async function getOrCreateShop(shopDomain) {
 export async function getOrCreateCustomer({ shopId, shopifyCustomerId, email }) {
   if (!shopifyCustomerId && !email) return null;
 
-  const existing = await prisma.customerAccount.findFirst({
+  const db = prisma;
+  const existing = await db.customerAccount.findFirst({
     where: {
       shopId,
       OR: [
@@ -30,7 +32,7 @@ export async function getOrCreateCustomer({ shopId, shopifyCustomerId, email }) 
 
   if (existing) return existing;
 
-  return prisma.customerAccount.create({
+  return db.customerAccount.create({
     data: {
       shopId,
       shopifyCustomerId,
