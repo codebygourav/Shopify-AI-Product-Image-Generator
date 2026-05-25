@@ -8,7 +8,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const shop = await getOrCreateShop(session.shop);
 
-  const db = prisma as any;
+  const db = prisma;
   const [total, publicCount, pendingModeration, recent] = await Promise.all([
     db.aiImageGeneration.count({ where: { shopId: shop.id } }),
     db.aiImageGeneration.count({
@@ -32,40 +32,38 @@ export default function Index() {
   const data = useLoaderData<typeof loader>();
 
   return (
-    <s-page heading="AI Image Manager">
-      <s-section>
-        <s-stack direction="inline" gap="base">
-          <s-box padding="base" borderWidth="base" borderRadius="base">
-            <s-heading>Total images</s-heading>
-            <s-text>{data.total}</s-text>
-          </s-box>
-          <s-box padding="base" borderWidth="base" borderRadius="base">
-            <s-heading>Public gallery</s-heading>
-            <s-text>{data.publicCount}</s-text>
-          </s-box>
-          <s-box padding="base" borderWidth="base" borderRadius="base">
-            <s-heading>Pending moderation</s-heading>
-            <s-text>{data.pendingModeration}</s-text>
-          </s-box>
-        </s-stack>
-      </s-section>
-
-      <s-section heading="Recent generations">
-        <s-stack direction="block" gap="base">
-          {data.recent.map((item: any) => (
-            <s-box key={item.id} padding="base" borderWidth="base" borderRadius="base">
-              <s-stack direction="block" gap="small">
-                <s-text>{item.prompt}</s-text>
-                <s-text tone="neutral">
-                  {item.status} · {item.visibility} · {item.customer?.email || "Guest"}
-                </s-text>
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.prompt} style={{ width: 160, maxWidth: "100%" }} />
-                ) : null}
-              </s-stack>
-            </s-box>
-          ))}
-        </s-stack>
+    <s-page heading="Overview">
+      <s-section heading="Recent activity">
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
+                <th style={{ padding: 10 }}>Preview</th>
+                <th style={{ padding: 10 }}>Prompt</th>
+                <th style={{ padding: 10 }}>Customer</th>
+                <th style={{ padding: 10 }}>State</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.recent.map((item) => (
+                <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: 10, width: 76 }}>
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.prompt} style={{ width: 56, aspectRatio: "1", objectFit: "cover", borderRadius: 6 }} />
+                    ) : null}
+                  </td>
+                  <td style={{ padding: 10, maxWidth: 520 }}>
+                    <div style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      <s-text>{item.prompt}</s-text>
+                    </div>
+                  </td>
+                  <td style={{ padding: 10 }}>{item.customer?.email || "Guest"}</td>
+                  <td style={{ padding: 10 }}>{item.status} · {item.visibility}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </s-section>
     </s-page>
   );

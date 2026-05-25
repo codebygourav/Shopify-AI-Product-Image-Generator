@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { generationMode, isLiveGeneration, testImageUrl } from "./generation-mode.server";
 
 const MODEL = "gpt-image-1";
 
@@ -7,6 +8,15 @@ const openai = new OpenAI({
 });
 
 export async function generateAiImage(prompt) {
+  if (!isLiveGeneration()) {
+    return {
+      imageUrl: testImageUrl(),
+      model: "test-image",
+      requestId: `test-${Date.now()}`,
+      mode: generationMode(),
+    };
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
@@ -29,6 +39,7 @@ export async function generateAiImage(prompt) {
     imageUrl,
     model: MODEL,
     requestId: result._request_id,
+    mode: generationMode(),
   };
 }
 

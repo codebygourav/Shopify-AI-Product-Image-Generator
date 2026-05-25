@@ -17,9 +17,32 @@ Shopify app for AI product-image generation, public galleries, customer history,
 - Theme App Extension:
   - Product page AI image studio block
   - Public community gallery block
-  - Customer-specific generated image listing block
+  - Profile generated images block for logged-in customers
   - AI image review block
 - Shopify Admin GraphQL media-upload hook through `productCreateMedia`.
+
+## Recommended storefront page structure
+
+Use the theme extension as separate pages:
+
+- `/pages/custom-configurator` with `AI product image studio`
+- `/pages/my-ai-images` with `AI profile images`
+- `/pages/community-gallery` with `AI community gallery`
+- Enable app embed `AI cart line images` so generated images replace the product image in cart lines
+
+Profile users request public/community publishing from `AI profile images`. Admin approval is required before the image appears in `AI community gallery`. Public gallery image details include actions to use the image or regenerate a new private version.
+
+Admin pages:
+
+- `Media library` (`/app/gallery`) is where images are approved for the community gallery.
+- `Customers` (`/app/dashboard`) is where admin reviews customers and their generated images.
+- `Settings` (`/app/admin`) is only for product/configurator setup.
+
+Full setup guide:
+
+```text
+docs/AI_THEME_PAGES.md
+```
 
 ## Important production note
 
@@ -46,9 +69,13 @@ SHOPIFY_APP_URL=
 SCOPES=write_products,read_products,write_files,read_files,read_customers
 DATABASE_URL=postgresql://apple@localhost:5432/ai_image_manager?schema=public
 OPENAI_API_KEY=
+IMAGE_GENERATION_MODE=test
+TEST_IMAGE_URL=https://dummyimage.com/1024x1024/7d7355/ffffff.png&text=Generated+AI+Image
 ```
 
 For theme app extension storefront calls, configure the block setting `App API base URL` to your app URL during development. In production, configure a Shopify app proxy and use the proxy URL.
+
+`IMAGE_GENERATION_MODE=test` returns `TEST_IMAGE_URL` and does not call OpenAI or moderation. Use `IMAGE_GENERATION_MODE=live` only when you want paid OpenAI image generation.
 
 ## Database setup
 
@@ -113,8 +140,7 @@ shopify app dev
 7. Add the Theme App Extension blocks in the theme editor:
    - `AI product image studio` on product pages near variants/add-to-cart
    - `AI community gallery` on product pages or a gallery/community page
-   - `AI user image listing` on account/profile pages or product pages
-   - `AI image reviews` below gallery sections
+   - `AI profile images` on customer account/profile pages
 8. Set each block's `App API base URL` to `/apps/ai-image`. If you leave it blank, the extension also defaults to `/apps/ai-image`.
 9. Test generation from a product page.
 

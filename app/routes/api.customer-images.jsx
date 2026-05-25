@@ -1,4 +1,3 @@
-import { json } from "@remix-run/node";
 import prisma from "../db.server";
 import { getOrCreateCustomer, getOrCreateShop } from "../services/shops.server";
 import { corsJson, optionsResponse } from "../services/cors.server";
@@ -21,30 +20,21 @@ export async function loader({ request }) {
     email: customerEmail,
   });
 
+  if (!customer) {
+    return corsJson({ success: true, images: [] });
+  }
+
   const db = prisma;
   const images = await db.aiImageGeneration.findMany({
     where: {
       shopId: shop.id,
       status: "COMPLETED",
-      moderationStatus: "APPROVED",
-      ...(customer ? { customerId: customer.id } : { visibility: "PUBLIC" }),
+      customerId: customer.id,
+      moderationStatus: { not: "REJECTED" },
       ...(productId ? { productId } : {}),
     },
     orderBy: { createdAt: "desc" },
     take: 40,
-    include: {
-      _count: { select: { likes: true, comments: true, reviews: true } },
-      reviews: {
-        where: { isApproved: true },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      },
-      comments: {
-        where: { isApproved: true },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      },
-    },
   });
 
   return corsJson({ success: true, images });
@@ -54,7 +44,7 @@ export async function action({ request }) {
   if (request.method === "OPTIONS") return optionsResponse();
 
   const body = await request.json();
-  const { shop: shopDomain, generationId, customerId, customerEmail } = body;
+  const { shop: shopDomain, generationId, customerId, customerEmail, intent = "select-cart" } = body;
 
   if (!shopDomain || !generationId) {
     return corsJson({ success: false, error: "shop and generationId are required" }, { status: 400 });
@@ -76,9 +66,14 @@ export async function action({ request }) {
     return corsJson({ success: false, error: "Image was not found." }, { status: 404 });
   }
 
+  const data =
+    intent === "request-public"
+      ? { visibility: "PUBLIC", moderationStatus: "PENDING" }
+      : { selectedForCart: true };
+
   const updated = await db.aiImageGeneration.update({
     where: { id: image.id },
-    data: { selectedForCart: true },
+    data,
   });
 
   return corsJson({ success: true, image: updated });

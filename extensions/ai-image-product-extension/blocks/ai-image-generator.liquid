@@ -6,9 +6,12 @@
   data-ai-image-generator
   data-api-base="{{ block.settings.api_base_url }}"
   data-shop="{{ shop.permanent_domain }}"
-  data-product-id="{% if product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% else %}gid://shopify/Product/{{ product.id }}{% endif %}"
-  data-product-handle="{{ product.handle }}"
-  data-product-title="{{ product.title | escape }}"
+  data-checkout-variant-id="{{ block.settings.checkout_variant_id }}"
+  data-product-id="{% if product and product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% elsif product %}gid://shopify/Product/{{ product.id }}{% endif %}"
+  data-product-handle="{% if product %}{{ product.handle }}{% endif %}"
+  data-product-title="{% if product %}{{ product.title | escape }}{% else %}{{ block.settings.heading | escape }}{% endif %}"
+  data-product-image="{% if product and product.featured_image %}{{ product.featured_image | image_url: width: 900 }}{% endif %}"
+  data-money-format="{{ shop.money_format | escape }}"
   data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
 >
@@ -18,6 +21,10 @@
         <span>{{ block.settings.preview_label }}</span>
       </div>
     </div>
+    <div class="aim-preview-toggle" data-ai-preview-toggle hidden>
+      <button type="button" class="aim-toggle is-active" data-ai-view="generated">Generated image</button>
+      <button type="button" class="aim-toggle" data-ai-view="product">Product image</button>
+    </div>
   </div>
 
   <div class="aim-product-studio__panel">
@@ -25,10 +32,7 @@
     <h2 class="aim-heading">{{ block.settings.heading }}</h2>
     <p class="aim-copy">{{ block.settings.description }}</p>
 
-    <div class="aim-variant-summary">
-      <span>Selected product</span>
-      <strong data-ai-variant-label>{{ product.selected_or_first_available_variant.title }}</strong>
-    </div>
+    <div class="aim-studio-options" data-ai-studio-options></div>
 
     <label class="aim-field">
       <span>Art direction</span>
@@ -40,17 +44,7 @@
       ></textarea>
     </label>
 
-    <div class="aim-prompt-tools">
-      <button type="button" class="aim-chip" data-ai-template="minimal gallery wall, premium print art, soft natural light">
-        Minimal wall art
-      </button>
-      <button type="button" class="aim-chip" data-ai-template="bold abstract print, textured brushwork, curated interior styling">
-        Abstract print
-      </button>
-      <button type="button" class="aim-chip" data-ai-template="calm spiritual artwork, refined color palette, elegant framed print">
-        Spiritual art
-      </button>
-    </div>
+    <div class="aim-prompt-tools" data-ai-prompt-tools></div>
 
     <label class="aim-checkbox">
       <input type="checkbox" data-ai-public>
@@ -63,6 +57,9 @@
       </button>
       <button class="aim-button" type="button" data-ai-select hidden>
         Use this image for checkout
+      </button>
+      <button class="aim-button aim-button--primary" type="button" data-ai-add-to-cart hidden>
+        Add selected image to cart
       </button>
     </div>
 
@@ -116,6 +113,12 @@
       "id": "api_base_url",
       "label": "App API base URL",
       "info": "Use your app URL during development, or your Shopify app proxy URL in production."
+    },
+    {
+      "type": "text",
+      "id": "checkout_variant_id",
+      "label": "Checkout variant ID override",
+      "info": "Optional. Use this when the block is placed on a custom page without a Shopify product form."
     }
   ]
 }

@@ -12,6 +12,12 @@
     }
 
     const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      // Continue to the standard non-JSON error message below.
+    }
+
     throw new Error(
       response.status === 404
         ? "AI app proxy was not found. Use /apps/ai-image as the block API base URL and update the app proxy if needed."
@@ -28,16 +34,17 @@
     const variantId = idInput?.value || "";
     const optionInputs = form
       ? Array.from(
-          form.querySelectorAll(
-            "select[name^='options'], select[name^='option'], input[name^='options']:checked, input[name^='option']:checked, fieldset input[type='radio']:checked",
-          ),
-        )
+        form.querySelectorAll(
+          "select[name^='options'], select[name^='option'], input[name^='options']:checked, input[name^='option']:checked, fieldset input[type='radio']:checked",
+        ),
+      )
       : [];
     const labels = optionInputs
       .map((input) => optionLabel(input))
       .filter(Boolean);
     return {
       id: variantId ? `gid://shopify/ProductVariant/${variantId}` : "",
+      numericId: variantId,
       title: labels.join(" / ") || "Default variant",
       promptText: labels.length ? labels.join(", ") : "Default variant",
     };
@@ -70,46 +77,211 @@
     input.value = value || "";
   }
 
-  document.querySelectorAll("[data-ai-image-generator]").forEach((root) => {
+  async function enhanceCartLineImages() {
+    if (!window.location.pathname.includes("/cart")) return;
+    document.documentElement.dataset.aiCartLineImages = "loading";
+
+    let cart;
+    try {
+      const response = await fetch("/cart.js", { headers: { Accept: "application/json" } });
+      cart = await readJson(response);
+    } catch {
+      document.documentElement.dataset.aiCartLineImages = "cart-fetch-failed";
+      return;
+    }
+
+    const aiItems = (cart.items || []).filter((item) => item.properties?.["_AI Image URL"]);
+    if (!aiItems.length) {
+      document.documentElement.dataset.aiCartLineImages = "no-ai-items";
+      return;
+    }
+
+    aiItems.forEach((item, index) => {
+      const imageUrl = item.properties["_AI Image URL"];
+      const prompt = item.properties["AI Prompt"] || item.properties["_AI Prompt"] || "Generated AI image";
+      const line = findCartLine(item, index);
+      if (!line) return;
+
+      let image = line.querySelector("img");
+      if (!image) image = createCartLineImage(line, imageUrl, prompt);
+
+      image.src = imageUrl;
+      image.srcset = "";
+      image.sizes = "";
+      image.alt = prompt;
+      image.classList.add("aim-cart-line-image");
+    });
+    document.documentElement.dataset.aiCartLineImages = "ready";
+  }
+
+  function createCartLineImage(line, imageUrl, prompt) {
+    const image = document.createElement("img");
+    image.className = "aim-cart-line-image";
+    image.src = imageUrl;
+    image.alt = prompt;
+
+    const mediaCell =
+      line.querySelector(".cart-item__media, .cart__image-wrapper, [class*='media']") ||
+      line.querySelector(".cart-item__details, .cart__meta, [class*='details']") ||
+      line.querySelector("td");
+    const productLink =
+      line.querySelector("a[href*='/products/']") ||
+      line.querySelector(".cart-item__name, [class*='name']");
+
+    if (mediaCell && !mediaCell.querySelector("img")) {
+      mediaCell.prepend(image);
+      return image;
+    }
+
+    if (productLink?.parentElement) {
+      productLink.parentElement.insertBefore(image, productLink);
+      return image;
+    }
+
+    line.prepend(image);
+    return image;
+  }
+
+  function findCartLine(item, index) {
+    const candidates = Array.from(
+      document.querySelectorAll("[id^='CartItem-'], .cart-item, .cart-items tr, tr, li, .cart__item"),
+    ).filter((candidate) => candidate.textContent?.trim());
+    const itemUrl = String(item.url || "").split("?")[0];
+    const byUrl = candidates.find((candidate) => {
+      return Array.from(candidate.querySelectorAll("a[href]")).some((link) =>
+        link.getAttribute("href")?.includes(itemUrl),
+      );
+    });
+    if (byUrl) return byUrl;
+
+    const productTitle = String(item.product_title || item.title || "").trim();
+    const byText = candidates.find((candidate) => {
+      const text = candidate.textContent || "";
+      return (
+        (productTitle && text.includes(productTitle)) ||
+        text.includes("AI Generated Image") ||
+        text.includes("AI Prompt")
+      );
+    });
+    if (byText) return byText;
+
+    return candidates.filter((candidate) => !candidate.querySelector("th"))[index] || null;
+  }
+
+  function cartProperties(image, variantTitle) {
+    const options = image.selectedOptionsOverride || selectedOptionsText(image);
+    const prompt = displayPrompt(image);
+
+    const properties = {
+      "_AI Image URL": image.imageUrl,
+      "_AI Generation ID": image.id,
+      "_AI Prompt": image.prompt,
+      "_AI Product Variant": variantTitle,
+      "_AI Custom Options": options,
+      "AI Prompt": prompt,
+      "AI Options": options,
+      "AI Generated Image": "Selected",
+    };
+
+    return Object.fromEntries(Object.entries(properties).filter(([, value]) => value));
+  }
+
+  function applyCartPropertiesToForm(form, properties) {
+    Object.entries(properties).forEach(([name, value]) => {
+      setCartProperty(form, name, value);
+    });
+  }
+
+  async function addGeneratedImageToCart({ root, studioConfig, form, selectedImage }) {
+    const variant = selectedVariant(form);
+    const variantId = variant.numericId || root.dataset.checkoutVariantId || studioConfig.checkoutVariantId || "";
+    const properties = cartProperties(selectedImage, selectedImage.variantTitle || variant.title);
+
+    if (form) {
+      applyCartPropertiesToForm(form, properties);
+      if (typeof form.requestSubmit === "function") {
+        form.requestSubmit();
+      } else {
+        form.submit();
+      }
+      return;
+    }
+
+    if (!variantId) {
+      throw new Error("Configure a Shopify checkout variant ID for this custom page.");
+    }
+
+    const response = await fetch("/cart/add.js", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        id: Number(variantId),
+        quantity: 1,
+        properties,
+      }),
+    });
+
+    const data = await readJson(response);
+    if (!response.ok) {
+      throw new Error(data.description || data.message || "Could not add generated image to cart.");
+    }
+  }
+
+  document.querySelectorAll("[data-ai-image-generator]").forEach(async (root) => {
     const button = root.querySelector("[data-ai-generate]");
     const selectButton = root.querySelector("[data-ai-select]");
+    const addToCartButton = root.querySelector("[data-ai-add-to-cart]");
     const textarea = root.querySelector("[data-ai-prompt]");
     const status = root.querySelector("[data-ai-status]");
     const preview = root.querySelector("[data-ai-preview]");
+    const previewToggle = root.querySelector("[data-ai-preview-toggle]");
     const publicInput = root.querySelector("[data-ai-public]");
-    const variantLabel = root.querySelector("[data-ai-variant-label]");
+    const optionsRoot = root.querySelector("[data-ai-studio-options]");
+    const promptTools = root.querySelector("[data-ai-prompt-tools]");
     const form = productForm(root);
     let selectedImage = null;
+    let generatedPreviewHtml = "";
+    const productPreviewHtml = root.dataset.productImage
+      ? `<img src="${root.dataset.productImage}" alt="${escapeHtml(root.dataset.productTitle || "Product image")}"><span>Product image</span>`
+      : "";
 
-    function refreshVariantLabel() {
-      const variant = selectedVariant(form);
-      variantLabel.textContent = variant.title;
-      return variant;
-    }
+    const studioConfig = await fetchStudioConfig(root);
+    renderStudioOptions(optionsRoot, studioConfig.optionGroups || []);
+    renderPromptTools(promptTools, studioConfig.promptTemplates || []);
+    prefillPromptFromUrl(textarea);
+    prefillOptionsFromUrl(root);
 
-    refreshVariantLabel();
-    document.addEventListener("change", refreshVariantLabel);
+    promptTools?.addEventListener("click", (event) => {
+      const template = event.target.closest("[data-ai-template]");
+      if (!template) return;
 
-    root.querySelectorAll("[data-ai-template]").forEach((template) => {
-      template.addEventListener("click", () => {
-        const variant = refreshVariantLabel();
-        textarea.value = `${template.dataset.aiTemplate}, for ${root.dataset.productTitle}, selected options: ${variant.promptText}`;
-        textarea.focus();
-      });
+      const optionSummary = selectedStudioOptions(root)
+        .map((option) => `${option.name}: ${option.value}`)
+        .join(", ");
+      textarea.value = `${template.dataset.aiTemplate}, for ${studioConfig.title || root.dataset.productTitle}, selected options: ${optionSummary}`;
+      textarea.focus();
     });
 
     button.addEventListener("click", async () => {
-      const variant = refreshVariantLabel();
       const prompt = textarea.value.trim();
       if (!prompt) {
         status.textContent = "Enter an art direction first.";
         return;
       }
 
-      const promptWithOptions = `${prompt}\n\nProduct: ${root.dataset.productTitle}. Selected product options: ${variant.promptText}.`;
+      const variant = selectedVariant(form);
+      const selectedOptions = selectedStudioOptions(root);
+      const optionSummary = selectedOptions.map((option) => `${option.name}: ${option.value}`).join(", ");
+      const promptWithOptions = `${prompt}\n\nCustom product: ${studioConfig.title || root.dataset.productTitle}. Selected options: ${optionSummary || "Default options"}.`;
       button.disabled = true;
       selectButton.hidden = true;
-      status.textContent = "Moderating prompt and generating artwork...";
+      addToCartButton.hidden = true;
+      status.textContent = publicInput.checked
+        ? "Generating artwork. Community posts will wait for admin approval."
+        : "Moderating prompt and generating artwork...";
       preview.classList.add("is-loading");
 
       try {
@@ -122,9 +294,11 @@
             productHandle: root.dataset.productHandle,
             variantId: variant.id,
             variantTitle: variant.title,
+            selectedOptions,
             customerId: root.dataset.customerId,
             customerEmail: root.dataset.customerEmail,
             prompt: promptWithOptions,
+            originalPrompt: prompt,
             visibility: publicInput.checked ? "PUBLIC" : "PRIVATE",
           }),
         });
@@ -132,12 +306,18 @@
         if (!data.success) throw new Error(data.error || "Image generation failed.");
 
         selectedImage = data.generation;
-        preview.innerHTML = `
+        generatedPreviewHtml = `
           <img src="${data.image}" alt="${escapeHtml(prompt)}">
           <span>Generated by AI</span>
         `;
+        preview.innerHTML = generatedPreviewHtml;
+        previewToggle.hidden = !productPreviewHtml;
+        setPreviewToggleState(root, "generated");
         selectButton.hidden = false;
-        status.textContent = "Image generated. Select it before adding this product to cart.";
+        status.textContent =
+          data.generation?.moderationStatus === "PENDING"
+            ? "Image generated and sent to admin for community approval. Select it before adding to cart."
+            : "Image generated in your app media gallery. Select it before adding to cart.";
       } catch (error) {
         status.textContent = error.message;
       } finally {
@@ -149,10 +329,8 @@
     selectButton.addEventListener("click", async () => {
       if (!selectedImage) return;
 
-      setCartProperty(form, "AI Image URL", selectedImage.imageUrl);
-      setCartProperty(form, "AI Generation ID", selectedImage.id);
-      setCartProperty(form, "AI Prompt", selectedImage.prompt);
-      setCartProperty(form, "AI Product Variant", selectedImage.variantTitle || selectedVariant(form).title);
+      const properties = cartProperties(selectedImage, selectedImage.variantTitle || selectedVariant(form).title);
+      applyCartPropertiesToForm(form, properties);
 
       await fetch(apiUrl(root.dataset.apiBase, "/api/customer-images"), {
         method: "POST",
@@ -163,60 +341,64 @@
           customerId: root.dataset.customerId,
           customerEmail: root.dataset.customerEmail,
         }),
-      }).catch(function () {});
+      }).catch(function () { });
 
-      status.textContent = "Selected image is attached to this cart item.";
+      addToCartButton.hidden = false;
+      status.textContent = "Selected image is attached to this cart item. Add it to cart when ready.";
+    });
+
+    addToCartButton.addEventListener("click", async () => {
+      if (!selectedImage) {
+        status.textContent = "Select a generated image first.";
+        return;
+      }
+
+      addToCartButton.disabled = true;
+      status.textContent = "Adding generated image to cart...";
+
+      try {
+        await addGeneratedImageToCart({ root, studioConfig, form, selectedImage });
+        if (!form) window.location.href = "/cart";
+      } catch (error) {
+        status.textContent = error.message;
+        addToCartButton.disabled = false;
+      }
+    });
+
+    previewToggle?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-ai-view]");
+      if (!button) return;
+
+      if (button.dataset.aiView === "product" && productPreviewHtml) {
+        preview.innerHTML = productPreviewHtml;
+        setPreviewToggleState(root, "product");
+      } else {
+        preview.innerHTML = generatedPreviewHtml;
+        setPreviewToggleState(root, "generated");
+      }
     });
   });
 
+  enhanceCartLineImages();
+
   document.querySelectorAll("[data-ai-gallery]").forEach(async (root) => {
     const grid = root.querySelector("[data-ai-gallery-grid]");
-    const images = await fetchImages(root, "/api/gallery");
-    grid.innerHTML = renderCards(images, { showReviews: true });
+    const [images, studioConfig] = await Promise.all([
+      fetchImages(root, "/api/gallery"),
+      fetchStudioConfig(root),
+    ]);
+    grid.innerHTML = renderCards(images, {
+      mode: "community",
+      optionGroups: studioConfig.optionGroups || [],
+    });
+    bindImageCardActions(root, grid);
   });
 
   document.querySelectorAll("[data-ai-user-images]").forEach(async (root) => {
     const grid = root.querySelector("[data-ai-user-images-grid]");
     const images = await fetchImages(root, "/api/customer-images");
-    grid.innerHTML = renderCards(images, { showReviews: true });
-  });
-
-  document.querySelectorAll("[data-ai-reviews]").forEach(async (root) => {
-    const list = root.querySelector("[data-ai-review-list]");
-    const select = root.querySelector("[data-ai-review-image]");
-    const form = root.querySelector("[data-ai-review-form]");
-    const status = root.querySelector("[data-ai-review-status]");
-    const images = await fetchImages(root, "/api/customer-images");
-
-    select.innerHTML = images.map((image) => `<option value="${image.id}">${escapeHtml(image.prompt).slice(0, 80)}</option>`).join("");
-    list.innerHTML = renderReviewList(images);
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const data = new FormData(form);
-      status.textContent = "Submitting review...";
-      try {
-        const response = await fetch(apiUrl(root.dataset.apiBase, "/api/image-interactions"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            shop: root.dataset.shop,
-            customerId: root.dataset.customerId,
-            customerEmail: root.dataset.customerEmail,
-            generationId: data.get("generationId"),
-            type: "review",
-            rating: data.get("rating"),
-            comment: data.get("comment"),
-          }),
-        });
-        const result = await readJson(response);
-        if (!result.success) throw new Error(result.error || "Review failed.");
-        status.textContent = "Review submitted for approval.";
-        form.reset();
-      } catch (error) {
-        status.textContent = error.message;
-      }
-    });
+    grid.innerHTML = renderCards(images, { mode: "user" });
+    bindImageCardActions(root, grid);
   });
 
   async function fetchImages(root, path) {
@@ -235,44 +417,292 @@
     }
   }
 
+  async function fetchStudioConfig(root) {
+    const fallback = {
+      title: root.dataset.productTitle || "Generate your own image",
+      optionGroups: [],
+      promptTemplates: [
+        "minimal gallery wall, premium print art, soft natural light",
+        "bold abstract print, textured brushwork, curated interior styling",
+        "calm spiritual artwork, refined color palette, elegant framed print",
+      ],
+    };
+
+    try {
+      const params = new URLSearchParams({ shop: root.dataset.shop || "" });
+      const response = await fetch(apiUrl(root.dataset.apiBase, `/api/studio-config?${params.toString()}`));
+      const data = await readJson(response);
+      return data.studioProduct || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function renderStudioOptions(root, groups) {
+    if (!root) return;
+    if (!groups.length) {
+      root.innerHTML = "";
+      return;
+    }
+
+    root.innerHTML = groups
+      .map((group) => {
+        const values = Array.isArray(group.values) ? group.values : [];
+        return `
+          <label class="aim-field">
+            <span>${escapeHtml(group.name)}</span>
+            <select data-ai-option data-ai-option-name="${escapeHtml(group.name)}" data-ai-option-prompt="${escapeHtml(group.promptLabel || group.name)}">
+              ${values
+            .map((value, valueIndex) => `<option value="${escapeHtml(value)}" ${valueIndex === 0 ? "selected" : ""}>${escapeHtml(value)}</option>`)
+            .join("")}
+            </select>
+          </label>
+        `;
+      })
+      .join("");
+  }
+
+  function renderPromptTools(root, templates) {
+    if (!root) return;
+    root.innerHTML = (templates || [])
+      .map((template) => `<button type="button" class="aim-chip" data-ai-template="${escapeHtml(template)}">${escapeHtml(shortTemplateLabel(template))}</button>`)
+      .join("");
+  }
+
+  function selectedStudioOptions(root) {
+    return Array.from(root.querySelectorAll("[data-ai-option]")).map((input) => ({
+      name: input.dataset.aiOptionName || "",
+      promptLabel: input.dataset.aiOptionPrompt || input.dataset.aiOptionName || "",
+      value: input.value || "",
+    }));
+  }
+
+  function selectedOptionsText(image) {
+    try {
+      const metadata = JSON.parse(image.metadata || "{}");
+      return (metadata.selectedOptions || [])
+        .map((option) => `${option.name}: ${option.value}`)
+        .join(", ");
+    } catch {
+      return "";
+    }
+  }
+
+  function displayPrompt(image) {
+    try {
+      const metadata = JSON.parse(image.metadata || "{}");
+      return metadata.originalPrompt || image.prompt || "";
+    } catch {
+      return image.prompt || "";
+    }
+  }
+
+  function prefillPromptFromUrl(textarea) {
+    if (!textarea || textarea.value.trim()) return;
+    const params = new URLSearchParams(window.location.search);
+    const prompt = params.get("prompt");
+    if (prompt) textarea.value = prompt;
+  }
+
+  function prefillOptionsFromUrl(root) {
+    const params = new URLSearchParams(window.location.search);
+    const selectedOptions = params.get("selectedOptions");
+    if (!selectedOptions) return;
+
+    const map = {};
+    selectedOptions.split(",").forEach((pair) => {
+      const [name, value] = pair.split(":").map((part) => part?.trim());
+      if (name && value) map[name] = value;
+    });
+
+    root.querySelectorAll("[data-ai-option]").forEach((select) => {
+      const name = select.dataset.aiOptionName;
+      if (name && map[name]) select.value = map[name];
+    });
+  }
+
+  function shortTemplateLabel(template) {
+    const first = String(template || "").split(",")[0].trim();
+    return first.length > 24 ? `${first.slice(0, 21)}...` : first || "Prompt idea";
+  }
+
   function renderCards(images, options) {
     if (!images.length) return '<p class="aim-empty">No approved AI images yet.</p>';
     return images
-      .map((image) => `
-        <article class="aim-card" data-generation-id="${image.id}">
+      .map((image) => {
+        const prompt = displayPrompt(image);
+        const imageJson = escapeHtml(JSON.stringify(image));
+        const userPublicAction = renderUserPublicAction(image);
+        const title = escapeHtml(shortTitle(prompt));
+
+        if (options.mode === "community") {
+          return `<div class="aim-card aim_card_community_main" data-generation-id="${image.id}" data-ai-image-json="${imageJson}">
+          <article class="aim-card aim-card--community">
+            <img src="${image.imageUrl}" alt="${title}">
+            <div class="aim-card__overlay">
+              <span class="aim-card__title">${title}</span>
+
+            </div>
+          </article>
+          <div class="aim_card__actions">
+          <button type="button" class="aim-button aim-button--primary aim_view_detail_com" data-ai-card-action="details">View details</button>
+          </div>
+        </div>`;
+        }
+
+        return `
+        <article class="aim-card" data-generation-id="${image.id}" data-ai-image-json="${imageJson}">
           <img src="${image.imageUrl}" alt="${escapeHtml(image.prompt)}">
           <div class="aim-card__body">
-            <p>${escapeHtml(image.prompt)}</p>
-            <small>${image._count?.likes || 0} likes · ${image._count?.reviews || 0} reviews · ${image._count?.comments || 0} comments</small>
-            ${options.showReviews ? renderStars(image.reviews) : ""}
+            <p>${escapeHtml(prompt)}</p>
+            <small>${image.visibility === "PUBLIC" ? "Requested for community" : "Private image"}</small>
+            <div class="aim-card__actions">
+              <button type="button" class="aim-chip" data-ai-card-action="details">Details</button>
+              ${options.mode === "user" ? userPublicAction : ""}
+            </div>
           </div>
         </article>
-      `)
+      `;
+      })
       .join("");
   }
 
-  function renderReviewList(images) {
-    const reviews = images.flatMap((image) =>
-      (image.reviews || []).map((review) => ({ ...review, image })),
-    );
-    if (!reviews.length) return '<p class="aim-empty">No approved reviews yet.</p>';
-    return reviews
-      .map((review) => `
-        <article class="aim-review">
-          <img src="${review.image.imageUrl}" alt="${escapeHtml(review.image.prompt)}">
-          <div>
-            <strong>${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</strong>
-            <p>${escapeHtml(review.body || "")}</p>
-          </div>
-        </article>
-      `)
-      .join("");
+  function renderUserPublicAction(image) {
+    if (image.visibility !== "PUBLIC") {
+      return '<button type="button" class="aim-chip" data-ai-card-action="request-public">Request public</button>';
+    }
+
+    if (image.moderationStatus === "PENDING") {
+      return '<span class="aim-chip aim-chip--static">Pending admin approval</span>';
+    }
+
+    if (image.moderationStatus === "APPROVED") {
+      return '<span class="aim-chip aim-chip--static">Live in community</span>';
+    }
+
+    return '<button type="button" class="aim-chip" data-ai-card-action="request-public">Request again</button>';
   }
 
-  function renderStars(reviews) {
-    if (!reviews?.length) return "";
-    const average = Math.round(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length);
-    return `<span class="aim-stars">${"★".repeat(average)}${"☆".repeat(5 - average)}</span>`;
+  function bindImageCardActions(root, grid) {
+    grid.addEventListener("click", async (event) => {
+      const action = event.target.closest("[data-ai-card-action]")?.dataset.aiCardAction;
+      const card = event.target.closest("[data-ai-image-json]");
+      if (!action || !card) return;
+
+      const image = JSON.parse(card.dataset.aiImageJson || "{}");
+      if (action === "details") {
+        const studioConfig = await fetchStudioConfig(root);
+        showImageDetails({ root, image, studioConfig });
+      }
+
+      if (action === "request-public") {
+        await requestPublicImage(root, image, event.target);
+      }
+
+    });
+  }
+
+  async function requestPublicImage(root, image, button) {
+    button.disabled = true;
+    try {
+      const response = await fetch(apiUrl(root.dataset.apiBase, "/api/customer-images"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shop: root.dataset.shop,
+          generationId: image.id,
+          customerId: root.dataset.customerId,
+          customerEmail: root.dataset.customerEmail,
+          intent: "request-public",
+        }),
+      });
+      const result = await readJson(response);
+      if (!result.success) throw new Error(result.error || "Request failed.");
+      button.outerHTML = '<span class="aim-chip aim-chip--static">Pending admin approval</span>';
+    } catch (error) {
+      button.textContent = error.message;
+      button.disabled = false;
+    }
+  }
+
+  function showImageDetails({ root, image, studioConfig }) {
+    const prompt = escapeHtml(displayPrompt(image));
+    const options = escapeHtml(selectedOptionsText(image) || "No options saved");
+    const creator = escapeHtml(image.customer?.displayName || image.customer?.email || "Community member");
+    const modal = document.createElement("div");
+    modal.className = "aim-modal";
+    const optionGroups = studioConfig?.optionGroups || [];
+    modal.innerHTML = `
+      <div class="aim-modal__panel">
+        <button type="button" class="aim-modal__close" aria-label="Close">×</button>
+        <img src="${image.imageUrl}" alt="${prompt}">
+        <h3>${escapeHtml(shortTitle(displayPrompt(image)))}</h3>
+        <p class="aim-modal__meta">${creator}</p>
+        <p class="aim-modal__prompt">${prompt}</p>
+        <p class="aim-modal__options">${options}</p>
+        ${optionGroups.length
+        ? `<div class="aim-modal__pickers">
+                ${optionGroups
+          .map((group) => {
+            const values = Array.isArray(group.values) ? group.values : [];
+            return `
+                      <label>
+                        <span>${escapeHtml(group.name)}</span>
+                        <select data-ai-community-option data-ai-option-name="${escapeHtml(group.name)}">
+                          ${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}
+                        </select>
+                      </label>
+                    `;
+          })
+          .join("")}
+              </div>`
+        : ""
+      }
+        <div class="aim-modal__actions">
+          <button type="button" class="aim-button  aim-button--outline" data-ai-modal-action="use">Use this image</button>
+          <button type="button" class="aim-button aim-button--filled" data-ai-modal-action="regenerate">Regenerate</button>
+        </div>
+      </div>
+    `;
+    modal.querySelector("[data-ai-modal-action='use']")?.addEventListener("click", async () => {
+      const selectedOptionsOverride = selectedCommunityOptions(modal) || selectedOptionsText(image);
+      image.selectedOptionsOverride = selectedOptionsOverride;
+      await addGeneratedImageToCart({ root, studioConfig, form: null, selectedImage: image });
+      window.location.href = "/cart";
+    });
+    modal.querySelector("[data-ai-modal-action='regenerate']")?.addEventListener("click", () => {
+      const selectedOptionsOverride = selectedCommunityOptions(modal);
+      const promptValue = displayPrompt(image);
+      const url = root.dataset.configuratorUrl || "/pages/custom-configurator";
+      const params = new URLSearchParams({
+        referenceGeneration: image.id,
+        prompt: promptValue,
+      });
+      if (selectedOptionsOverride) params.set("selectedOptions", selectedOptionsOverride);
+      window.location.href = `${url}${url.includes("?") ? "&" : "?"}${params.toString()}`;
+    });
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal || event.target.closest(".aim-modal__close")) modal.remove();
+    });
+    document.body.appendChild(modal);
+  }
+
+  function selectedCommunityOptions(root) {
+    const selections = Array.from(root.querySelectorAll("[data-ai-community-option]"))
+      .map((input) => `${input.dataset.aiOptionName}: ${input.value}`)
+      .filter(Boolean);
+    return selections.join(", ");
+  }
+
+  function shortTitle(prompt) {
+    const first = String(prompt || "").split(",")[0].trim();
+    return first.length > 24 ? `${first.slice(0, 24)}...` : first || "Artwork";
+  }
+
+  function setPreviewToggleState(root, view) {
+    root.querySelectorAll("[data-ai-view]").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.aiView === view);
+    });
   }
 
   function escapeHtml(value) {

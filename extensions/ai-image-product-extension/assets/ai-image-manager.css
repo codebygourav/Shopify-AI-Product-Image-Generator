@@ -15,13 +15,13 @@
   grid-template-columns: minmax(260px, 0.9fr) minmax(300px, 1fr);
   gap: 28px;
   align-items: stretch;
-  padding: 28px;
-  border: 1px solid var(--aim-line);
-  border-radius: 8px;
-  background: #fff;
+  padding: 24px 0;
+  background: transparent;
 }
 
 .aim-product-studio__media {
+  display: grid;
+  gap: 12px;
   min-height: 420px;
 }
 
@@ -110,15 +110,35 @@
   border-bottom: 1px solid var(--aim-line);
 }
 
+.aim-variant-summary>div {
+  display: grid;
+  gap: 4px;
+}
+
+.aim-variant-summary span {
+  color: var(--aim-muted);
+  font-size: 13px;
+}
+
 .aim-field {
   display: grid;
   gap: 8px;
   font-weight: 700;
 }
 
+.aim-studio-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--aim-line);
+  border-bottom: 1px solid var(--aim-line);
+}
+
 .aim-textarea,
 .aim-review-form textarea,
-.aim-review-form select {
+.aim-review-form select,
+.aim-studio-options select {
   width: 100%;
   padding: 12px;
   border: 1px solid var(--aim-line);
@@ -129,7 +149,8 @@
 
 .aim-prompt-tools,
 .aim-actions,
-.aim-section-head {
+.aim-section-head,
+.aim-preview-toggle {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -138,7 +159,8 @@
 }
 
 .aim-chip,
-.aim-button {
+.aim-button,
+.aim-toggle {
   min-height: 44px;
   padding: 0 16px;
   border: 1px solid var(--aim-line);
@@ -149,10 +171,30 @@
   font-weight: 700;
 }
 
-.aim-button--primary {
+.aim-chip--static {
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+  background: var(--aim-surface);
+  color: var(--aim-muted);
+}
+
+.aim-toggle {
+  min-height: 38px;
+  font-size: 13px;
+}
+
+.aim-toggle.is-active {
   border-color: var(--aim-accent);
   background: var(--aim-accent);
   color: #fff;
+}
+
+.aim-button--primary {
+  border-color: var(--aim-accent);
+  background: transparent;
+  color: #796f51;
+
 }
 
 .aim-button:disabled {
@@ -183,6 +225,7 @@
 }
 
 .aim-card {
+  position: relative;
   overflow: hidden;
   border: 1px solid var(--aim-line);
   border-radius: 8px;
@@ -202,6 +245,34 @@
   padding: 12px;
 }
 
+.aim-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.aim-card__options {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.aim-card__options label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.aim-card__options select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--aim-line);
+  border-radius: 6px;
+  background: #fff;
+}
+
 .aim-card__body p {
   margin: 0;
   font-weight: 700;
@@ -216,6 +287,50 @@
   display: grid;
   gap: 12px;
   margin-top: 18px;
+}
+
+.aim-cart-preview {
+  margin: 28px 0;
+}
+
+.aim-cart-preview__grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.aim-cart-preview__item {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--aim-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.aim-cart-preview__item img {
+  width: 140px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.aim-cart-line-image {
+  width: 120px !important;
+  max-width: 120px !important;
+  min-width: 120px !important;
+  aspect-ratio: 1 !important;
+  object-fit: cover !important;
+  display: block !important;
+  margin: 0 16px 12px 0 !important;
+  border-radius: 6px !important;
+}
+
+.aim-cart-preview__item h3,
+.aim-cart-preview__item p {
+  margin: 0 0 4px;
 }
 
 .aim-review {
@@ -239,10 +354,146 @@
   margin: 6px 0 0;
 }
 
+.aim-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.48);
+}
+
+.aim-button--filled {
+  background: #796f51;
+  color: #fff;
+}
+
+.aim-modal__panel {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: 80vh;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.aim-modal__panel img {
+  width: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--aim-surface);
+}
+
+.aim-button--outline {
+  background: transparent;
+  border: 1px solid #796f51;
+  color: #796f51;
+}
+
+.aim-modal__panel h3,
+.aim-modal__panel p {
+  margin: 0;
+}
+
+.aim_card_community_main {
+  position: relative;
+}
+
+.aim_card__actions {
+  position: absolute;
+  top: 50%;
+  right: 68px !important;
+  transform: translateY(-50%);
+  display: none;
+  transition: ease-in-out 0.2s;
+}
+
+.aim_view_detail_com {
+  background: #fff;
+  border-color: #fff;
+}
+
+/* SHOW BUTTON ON CARD HOVER */
+.aim_card_community_main:hover .aim_card__actions {
+  display: block;
+}
+
+.aim-card--community .aim-card__overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: end;
+  gap: 10px;
+  padding: 14px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0));
+}
+
+.aim-card--community .aim-card__title {
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.aim-modal__prompt {
+  color: var(--aim-muted);
+  line-height: 1.6;
+}
+
+.aim-modal__meta {
+  color: var(--aim-muted);
+  font-size: 13px;
+}
+
+.aim-modal__pickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.aim-modal__pickers label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.aim-modal__pickers select {
+  padding: 10px 12px;
+  border: 1px solid #dddd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.aim-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.aim-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--aim-line);
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
 @keyframes aim-shimmer {
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(100%);
   }
@@ -256,5 +507,13 @@
 
   .aim-heading {
     font-size: 34px;
+  }
+
+  .aim-cart-preview__item {
+    grid-template-columns: 88px 1fr;
+  }
+
+  .aim-cart-preview__item img {
+    width: 88px;
   }
 }

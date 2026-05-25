@@ -10,18 +10,28 @@
   data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
 >
-  <div class="aim-section-head">
-    <div>
-      <p class="aim-eyebrow">{{ block.settings.eyebrow }}</p>
-      <h2 class="aim-heading">{{ block.settings.heading }}</h2>
+  {% if customer %}
+    <div class="aim-section-head">
+      <div>
+        <p class="aim-eyebrow">{{ block.settings.eyebrow }}</p>
+        <h2 class="aim-heading">{{ block.settings.heading }}</h2>
+      </div>
     </div>
-  </div>
-  <div class="aim-gallery-grid" data-ai-user-images-grid></div>
+    <div class="aim-gallery-grid" data-ai-user-images-grid></div>
+  {% else %}
+    <div class="aim-section-head">
+      <div>
+        <p class="aim-eyebrow">{{ block.settings.eyebrow }}</p>
+        <h2 class="aim-heading">{{ block.settings.heading }}</h2>
+        <p class="aim-copy">{{ block.settings.login_message }}</p>
+      </div>
+    </div>
+  {% endif %}
 </section>
 
 {% schema %}
 {
-  "name": "AI user image listing",
+  "name": "AI profile images",
   "target": "section",
   "settings": [
     {
@@ -34,7 +44,13 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Generated images for this customer"
+      "default": "Your generated images"
+    },
+    {
+      "type": "textarea",
+      "id": "login_message",
+      "label": "Login message",
+      "default": "Log in to view the images you created with AI."
     },
     {
       "type": "url",

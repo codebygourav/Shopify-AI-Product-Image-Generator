@@ -6,6 +6,7 @@
   data-ai-gallery
   data-api-base="{{ block.settings.api_base_url }}"
   data-shop="{{ shop.permanent_domain }}"
+  data-configurator-url="{{ block.settings.configurator_url }}"
   data-product-id="{% if product %}{% if product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% else %}gid://shopify/Product/{{ product.id }}{% endif %}{% endif %}"
 >
   <div class="aim-section-head">
@@ -39,6 +40,12 @@
       "id": "api_base_url",
       "label": "App API base URL",
       "info": "Use your app URL during development, or your Shopify app proxy URL in production."
+    },
+    {
+      "type": "url",
+      "id": "configurator_url",
+      "label": "AI configurator page URL",
+      "info": "Used when a customer regenerates from a community image."
     }
   ]
 }
