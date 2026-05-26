@@ -1,29 +1,19 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
-import prisma from "../db.server";
 import { getOrCreateShop } from "../services/shops.server";
+import { getAiImageGenerations } from "../services/metaobjects.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shop = await getOrCreateShop(session.shop);
+  const { admin, session } = await authenticate.admin(request);
+  const shop = await getOrCreateShop(admin, session.shop);
 
-  const db = prisma;
-  const [total, publicCount, pendingModeration, recent] = await Promise.all([
-    db.aiImageGeneration.count({ where: { shopId: shop.id } }),
-    db.aiImageGeneration.count({
-      where: { shopId: shop.id, visibility: "PUBLIC" },
-    }),
-    db.aiImageGeneration.count({
-      where: { shopId: shop.id, moderationStatus: "PENDING" },
-    }),
-    db.aiImageGeneration.findMany({
-      where: { shopId: shop.id },
-      orderBy: { createdAt: "desc" },
-      take: 6,
-      include: { customer: true },
-    }),
-  ]);
+  const allGenerations = await getAiImageGenerations(admin);
+  
+  const total = allGenerations.length;
+  const publicCount = allGenerations.filter(gen => gen.visibility === "PUBLIC").length;
+  const pendingModeration = allGenerations.filter(gen => gen.moderationStatus === "PENDING").length;
+  const recent = allGenerations.slice(0, 6);
 
   return { shop: session.shop, total, publicCount, pendingModeration, recent };
 };

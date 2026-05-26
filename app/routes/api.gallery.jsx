@@ -1,6 +1,7 @@
-import prisma from "../db.server";
+import { unauthenticated } from "../shopify.server";
 import { getOrCreateShop } from "../services/shops.server";
 import { corsJson, optionsResponse } from "../services/cors.server";
+import { getAiImageGenerations } from "../services/metaobjects.server";
 
 export async function action({ request }) {
   if (request.method === "OPTIONS") return optionsResponse();
@@ -14,22 +15,20 @@ export async function loader({ request }) {
     return corsJson({ success: false, error: "shop is required" }, { status: 400 });
   }
 
-  const shop = await getOrCreateShop(shopDomain);
-  const db = prisma;
-  const images = await db.aiImageGeneration.findMany({
-    where: {
-      shopId: shop.id,
+  try {
+    const { admin } = await unauthenticated.admin(shopDomain);
+    await getOrCreateShop(admin, shopDomain);
+
+    const images = await getAiImageGenerations(admin, {
       visibility: "PUBLIC",
       moderationStatus: "APPROVED",
       status: "COMPLETED",
-      imageUrl: { not: null },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 24,
-    include: {
-      customer: true,
-    },
-  });
+      take: 24,
+    });
 
-  return corsJson({ success: true, images });
+    return corsJson({ success: true, images });
+  } catch (err) {
+    console.error("api.gallery error", err);
+    return corsJson({ success: false, error: err.message }, { status: 500 });
+  }
 }

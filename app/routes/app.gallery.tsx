@@ -1,8 +1,13 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, Link, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
-import prisma from "../db.server";
 import { getOrCreateShop } from "../services/shops.server";
+import {
+  getAiImageGenerations,
+  getAiImageGeneration,
+  updateAiImageGeneration,
+  deleteAiImageGeneration
+} from "../services/metaobjects.server";
 
 type MediaImage = {
   id: string;
@@ -17,60 +22,41 @@ type MediaImage = {
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const url = new URL(request.url);
   const selectedImageId = url.searchParams.get("image");
-  const shop = await getOrCreateShop(session.shop);
-  const db = prisma;
+  await getOrCreateShop(admin, session.shop);
 
   const [images, selectedImage] = await Promise.all([
-    db.aiImageGeneration.findMany({
-      where: { shopId: shop.id },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      include: { customer: true },
-    }),
-    selectedImageId
-      ? db.aiImageGeneration.findFirst({
-          where: { id: selectedImageId, shopId: shop.id },
-          include: { customer: true },
-        })
-      : null,
+    getAiImageGenerations(admin),
+    selectedImageId ? getAiImageGeneration(admin, selectedImageId) : null,
   ]);
 
   return { images, selectedImage };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shop = await getOrCreateShop(session.shop);
+  const { admin, session } = await authenticate.admin(request);
+  await getOrCreateShop(admin, session.shop);
   const form = await request.formData();
   const id = String(form.get("id") || "");
   const intent = String(form.get("intent") || "");
-  const db = prisma;
-
-  const image = await db.aiImageGeneration.findFirst({ where: { id, shopId: shop.id } });
-  if (!image) return null;
 
   if (intent === "image:delete") {
-    await db.aiImageGeneration.delete({ where: { id: image.id } });
-    return null;
-  }
-
-  if ((intent === "image:approve" || intent === "image:reject") && image.visibility !== "PUBLIC") {
+    await deleteAiImageGeneration(admin, id);
     return null;
   }
 
   const data =
     intent === "image:approve"
-      ? { moderationStatus: "APPROVED" as const }
+      ? { moderationStatus: "APPROVED" }
       : intent === "image:reject"
-        ? { moderationStatus: "REJECTED" as const }
+        ? { moderationStatus: "REJECTED" }
         : intent === "image:public"
-          ? { visibility: "PUBLIC" as const, moderationStatus: "APPROVED" as const }
-          : { visibility: "PRIVATE" as const, moderationStatus: "APPROVED" as const };
+          ? { visibility: "PUBLIC", moderationStatus: "APPROVED" }
+          : { visibility: "PRIVATE", moderationStatus: "APPROVED" };
 
-  await db.aiImageGeneration.update({ where: { id: image.id }, data });
+  await updateAiImageGeneration(admin, id, data);
   return null;
 };
 

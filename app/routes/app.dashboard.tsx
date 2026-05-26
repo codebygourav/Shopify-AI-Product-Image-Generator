@@ -1,8 +1,14 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, Link, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
-import prisma from "../db.server";
 import { getOrCreateShop } from "../services/shops.server";
+import {
+  getCustomers,
+  getAiImageGenerations,
+  updateCustomerProfile,
+  updateAiImageGeneration,
+  deleteAiImageGeneration
+} from "../services/metaobjects.server";
 
 type MetadataOption = { name?: string; value?: string };
 type CustomerImage = {
@@ -25,84 +31,67 @@ type CustomerDetailData = {
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const url = new URL(request.url);
   const selectedCustomerId = url.searchParams.get("customer");
-  const shop = await getOrCreateShop(session.shop);
-  const db = prisma;
+  await getOrCreateShop(admin, session.shop);
 
-  const [customers, selectedCustomer] = await Promise.all([
-    db.customerAccount.findMany({
-      where: { shopId: shop.id },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      include: { _count: { select: { generations: true } } },
-    }),
-    selectedCustomerId
-      ? db.customerAccount.findFirst({
-          where: { id: selectedCustomerId, shopId: shop.id },
-          include: {
-            generations: {
-              orderBy: { createdAt: "desc" },
-              take: 100,
-            },
-          },
-        })
-      : null,
-  ]);
+  const customers = await getCustomers(admin);
+  let selectedCustomer = null;
+
+  if (selectedCustomerId) {
+    const activeCust = customers.find(c => c.id === selectedCustomerId);
+    if (activeCust) {
+      const generations = await getAiImageGenerations(admin, { customerId: selectedCustomerId });
+      selectedCustomer = {
+        ...activeCust,
+        generations,
+      };
+    }
+  }
 
   return { customers, selectedCustomer };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shop = await getOrCreateShop(session.shop);
+  const { admin, session } = await authenticate.admin(request);
+  await getOrCreateShop(admin, session.shop);
   const form = await request.formData();
   const id = String(form.get("id") || "");
   const intent = String(form.get("intent") || "");
-  const db = prisma;
 
   if (intent.startsWith("customer:")) {
-    const customer = await db.customerAccount.findFirst({ where: { id, shopId: shop.id } });
+    const customers = await getCustomers(admin);
+    const customer = customers.find(c => c.id === id);
     if (!customer) return null;
 
     const generationLimitValue = String(form.get("generationLimit") || "").trim();
     const generationLimit = generationLimitValue === "" ? null : Number(generationLimitValue);
 
-    await db.customerAccount.update({
-      where: { id: customer.id },
-      data: {
-        ...(intent === "customer:approve" ? { isApproved: true } : {}),
-        ...(intent === "customer:block" ? { isApproved: false } : {}),
-        ...(form.has("generationLimit") ? { generationLimit } : {}),
-      },
+    await updateCustomerProfile(admin, customer.id, {
+      ...(intent === "customer:approve" ? { isApproved: true } : {}),
+      ...(intent === "customer:block" ? { isApproved: false } : {}),
+      ...(form.has("generationLimit") ? { generationLimit } : {}),
     });
     return null;
   }
 
   if (intent.startsWith("image:")) {
-    const image = await db.aiImageGeneration.findFirst({ where: { id, shopId: shop.id } });
-    if (!image) return null;
-
     if (intent === "image:delete") {
-      await db.aiImageGeneration.delete({ where: { id: image.id } });
-      return null;
-    }
-
-    if ((intent === "image:approve" || intent === "image:reject") && image.visibility !== "PUBLIC") {
+      await deleteAiImageGeneration(admin, id);
       return null;
     }
 
     const data =
       intent === "image:approve"
-        ? { moderationStatus: "APPROVED" as const }
+        ? { moderationStatus: "APPROVED" }
         : intent === "image:reject"
-          ? { moderationStatus: "REJECTED" as const }
+          ? { moderationStatus: "REJECTED" }
           : intent === "image:public"
-            ? { visibility: "PUBLIC" as const, moderationStatus: "APPROVED" as const }
-            : { visibility: "PRIVATE" as const, moderationStatus: "APPROVED" as const };
+            ? { visibility: "PUBLIC", moderationStatus: "APPROVED" }
+            : { visibility: "PRIVATE", moderationStatus: "APPROVED" };
 
-    await db.aiImageGeneration.update({ where: { id: image.id }, data });
+    await updateAiImageGeneration(admin, id, data);
   }
 
   return null;

@@ -1,8 +1,8 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
-import prisma from "../db.server";
 import { getOrCreateShop, parseShopSettings } from "../services/shops.server";
+import { updateShopSettings } from "../services/metaobjects.server";
 
 type OptionGroup = {
   name: string;
@@ -11,8 +11,8 @@ type OptionGroup = {
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shop = await getOrCreateShop(session.shop);
+  const { admin, session } = await authenticate.admin(request);
+  const shop = await getOrCreateShop(admin, session.shop);
   const settings = parseShopSettings(shop.settings);
 
   return {
@@ -23,8 +23,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shop = await getOrCreateShop(session.shop);
+  const { admin, session } = await authenticate.admin(request);
+  const shop = await getOrCreateShop(admin, session.shop);
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
 
@@ -45,10 +45,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     };
 
-    await prisma.shop.update({
-      where: { id: shop.id },
-      data: { settings: JSON.stringify(nextSettings) },
-    });
+    await updateShopSettings(admin, JSON.stringify(nextSettings));
   }
 
   return null;

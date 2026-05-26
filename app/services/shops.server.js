@@ -1,15 +1,32 @@
-import prisma from "../db.server";
+import {
+  getShopSettings,
+  updateShopSettings,
+  getCustomerProfile,
+  updateCustomerProfile,
+  ensureMetaobjectDefinition
+} from "./metaobjects.server";
 
-export async function getOrCreateShop(shopDomain) {
-  const db = prisma;
-  return db.shop.upsert({
-    where: { shop: shopDomain },
-    update: {},
-    create: {
-      shop: shopDomain,
-      settings: JSON.stringify(defaultShopSettings()),
-    },
-  });
+export async function getOrCreateShop(admin, shopDomain) {
+  // Ensure the AI generation metaobject definition is created
+  await ensureMetaobjectDefinition(admin);
+
+  let settingsStr = await getShopSettings(admin);
+  let settings;
+
+  if (!settingsStr) {
+    settings = defaultShopSettings();
+    settingsStr = JSON.stringify(settings);
+    await updateShopSettings(admin, settingsStr);
+  } else {
+    settings = parseShopSettings(settingsStr);
+  }
+
+  // Map to the object structure expected by the rest of the application
+  return {
+    id: shopDomain,
+    shop: shopDomain,
+    settings: JSON.stringify(settings),
+  };
 }
 
 export function defaultShopSettings() {
@@ -74,27 +91,29 @@ export function parseShopSettings(settings) {
   };
 }
 
-export async function getOrCreateCustomer({ shopId, shopifyCustomerId, email }) {
-  if (!shopifyCustomerId && !email) return null;
+export async function getOrCreateCustomer({ admin, shopId, shopifyCustomerId, email }) {
+  if (!shopifyCustomerId) return null;
 
-  const db = prisma;
-  const existing = await db.customerAccount.findFirst({
-    where: {
-      shopId,
-      OR: [
-        shopifyCustomerId ? { shopifyCustomerId } : undefined,
-        email ? { email } : undefined,
-      ].filter(Boolean),
-    },
-  });
+  // Fetch the customer's custom approval/limit profile from their Shopify Customer metafields
+  let profile = await getCustomerProfile(admin, shopifyCustomerId);
 
-  if (existing) return existing;
+  if (!profile) {
+    // If new, initialize their profile with defaults
+    profile = await updateCustomerProfile(admin, shopifyCustomerId, {
+      isApproved: true,
+      generationLimit: null,
+      totalGenerations: 0,
+    });
+  }
 
-  return db.customerAccount.create({
-    data: {
-      shopId,
-      shopifyCustomerId,
-      email,
-    },
-  });
+  // Map to the object structure expected by the application
+  return {
+    id: shopifyCustomerId,
+    shopId,
+    shopifyCustomerId,
+    email: email || null,
+    displayName: email ? email.split("@")[0] : "Customer",
+    isApproved: profile.isApproved !== false,
+    generationLimit: profile.generationLimit ?? null,
+  };
 }
