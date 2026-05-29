@@ -12,10 +12,11 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
-      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD}@db:3306/${MYSQL_DB:-ai_image_manager}
+      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}@db:3306/${MYSQL_DB:-ai_image_manager}
       - SHOPIFY_API_KEY=${SHOPIFY_API_KEY}
       - SHOPIFY_API_SECRET=${SHOPIFY_API_SECRET}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_IMAGE_MODEL=${OPENAI_IMAGE_MODEL:-gpt-image-1.5}
       - IMAGE_GENERATION_MODE=${IMAGE_GENERATION_MODE:-live}
       - SHOPIFY_APP_URL=${APP_URL}
       - SCOPES=${SCOPES}
@@ -28,15 +29,16 @@ services:
     container_name: shopify-ai-db
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       - MYSQL_DATABASE=${MYSQL_DB:-ai_image_manager}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
