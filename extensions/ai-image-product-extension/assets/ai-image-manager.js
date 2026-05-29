@@ -77,7 +77,10 @@
     input.value = value || "";
   }
 
+  let isEnhancing = false;
   async function enhanceCartLineImages() {
+    if (isEnhancing) return;
+    isEnhancing = true;
     document.documentElement.dataset.aiCartLineImages = "loading";
 
     let cart;
@@ -86,12 +89,14 @@
       cart = await readJson(response);
     } catch {
       document.documentElement.dataset.aiCartLineImages = "cart-fetch-failed";
+      isEnhancing = false;
       return;
     }
 
     const aiItems = (cart.items || []).filter((item) => item.properties?.["_AI Image URL"]);
     if (!aiItems.length) {
       document.documentElement.dataset.aiCartLineImages = "no-ai-items";
+      isEnhancing = false;
       return;
     }
 
@@ -102,15 +107,25 @@
       if (!line) return;
 
       let image = line.querySelector("img");
-      if (!image) image = createCartLineImage(line, imageUrl, prompt);
+      if (!image) {
+        image = createCartLineImage(line, imageUrl, prompt);
+      } else {
+        // Strip theme lazy-loading attributes to prevent theme scripts from overwriting our AI image URL
+        image.removeAttribute("srcset");
+        image.removeAttribute("data-srcset");
+        image.removeAttribute("data-src");
+        image.removeAttribute("data-lazy");
+        image.removeAttribute("data-lazy-src");
+        image.sizes = "";
+      }
 
       image.src = imageUrl;
       image.srcset = "";
-      image.sizes = "";
       image.alt = prompt;
       image.classList.add("aim-cart-line-image");
     });
     document.documentElement.dataset.aiCartLineImages = "ready";
+    isEnhancing = false;
   }
 
   // Intercept global Fetch requests to capture AJAX cart events (e.g. Add to Cart, Cart updates)
@@ -123,7 +138,8 @@
           }
           const url = arguments[0];
           const urlString = typeof url === "string" ? url : url?.url || "";
-          if (urlString.includes("/cart")) {
+          // Crucial: Ignore '/cart.js' itself to prevent infinite loop recursion
+          if (urlString.includes("/cart") && !urlString.includes("/cart.js")) {
             setTimeout(() => {
               enhanceCartLineImages();
             }, 600);
