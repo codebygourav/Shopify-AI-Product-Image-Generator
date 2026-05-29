@@ -78,7 +78,6 @@
   }
 
   async function enhanceCartLineImages() {
-    if (!window.location.pathname.includes("/cart")) return;
     document.documentElement.dataset.aiCartLineImages = "loading";
 
     let cart;
@@ -113,6 +112,43 @@
     });
     document.documentElement.dataset.aiCartLineImages = "ready";
   }
+
+  // Intercept global Fetch requests to capture AJAX cart events (e.g. Add to Cart, Cart updates)
+  (function (window2, originalFetch) {
+    if (typeof originalFetch === "function") {
+      window2.fetch = function () {
+        return originalFetch.apply(this, Array.prototype.slice.call(arguments)).then((response) => {
+          if (!response.ok) {
+            return response;
+          }
+          const url = arguments[0];
+          const urlString = typeof url === "string" ? url : url?.url || "";
+          if (urlString.includes("/cart")) {
+            setTimeout(() => {
+              enhanceCartLineImages();
+            }, 600);
+          }
+          return response;
+        });
+      };
+    }
+  })(window, window.fetch);
+
+  // Intercept XMLHttpRequest to support themes using AJAX libraries (e.g. jQuery, Cartjs)
+  (function (window2, originalOpen) {
+    if (typeof originalOpen === "function") {
+      XMLHttpRequest.prototype.open = function (method, url) {
+        this.addEventListener("load", () => {
+          if (url && String(url).includes("/cart")) {
+            setTimeout(() => {
+              enhanceCartLineImages();
+            }, 600);
+          }
+        });
+        return originalOpen.apply(this, arguments);
+      };
+    }
+  })(window, XMLHttpRequest.prototype.open);
 
   function createCartLineImage(line, imageUrl, prompt) {
     const image = document.createElement("img");
