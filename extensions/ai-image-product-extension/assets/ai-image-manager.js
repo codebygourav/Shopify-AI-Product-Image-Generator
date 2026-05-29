@@ -1,7 +1,13 @@
 (function () {
   function apiUrl(base, path) {
-    const normalizedPath = String(path || "").replace(/^\/api\//, "/");
     const normalizedBase = String(base || "/apps/ai-image").replace(/\/$/, "");
+    const rawPath = String(path || "");
+    const isDirectAppUrl = /^https?:\/\//i.test(normalizedBase);
+    const normalizedPath =
+      isDirectAppUrl && !/\/api$/i.test(normalizedBase)
+        ? rawPath
+        : rawPath.replace(/^\/api\//, "/");
+
     return `${normalizedBase}${normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`}`;
   }
 
@@ -21,12 +27,15 @@
     throw new Error(
       response.status === 404
         ? "AI app proxy was not found. Use /apps/ai-image as the block API base URL and update the app proxy if needed."
-        : text.slice(0, 160) || "AI app returned a non-JSON response.",
+        : "AI app returned HTML instead of JSON. Check the block App API base URL and Shopify app proxy settings.",
     );
   }
 
   function productForm(root) {
-    return root.closest("form[action*='/cart/add']") || document.querySelector("form[action*='/cart/add']");
+    return (
+      root.closest("form[action*='/cart/add']") ||
+      document.querySelector("form[action*='/cart/add']")
+    );
   }
 
   function selectedVariant(form) {
@@ -34,10 +43,10 @@
     const variantId = idInput?.value || "";
     const optionInputs = form
       ? Array.from(
-        form.querySelectorAll(
-          "select[name^='options'], select[name^='option'], input[name^='options']:checked, input[name^='option']:checked, fieldset input[type='radio']:checked",
-        ),
-      )
+          form.querySelectorAll(
+            "select[name^='options'], select[name^='option'], input[name^='options']:checked, input[name^='option']:checked, fieldset input[type='radio']:checked",
+          ),
+        )
       : [];
     const labels = optionInputs
       .map((input) => optionLabel(input))
@@ -57,7 +66,10 @@
     const fieldset = input.closest("fieldset");
     const legend = fieldset?.querySelector("legend")?.textContent?.trim();
     const selectLabel =
-      input.id && document.querySelector(`label[for="${CSS.escape(input.id)}"]`)?.textContent?.trim();
+      input.id &&
+      document
+        .querySelector(`label[for="${CSS.escape(input.id)}"]`)
+        ?.textContent?.trim();
     const name = input.name?.replace(/^options?\[?|\]?$/g, "") || "";
     const optionName = legend || name || selectLabel;
 
@@ -85,7 +97,9 @@
 
     let cart;
     try {
-      const response = await fetch("/cart.js", { headers: { Accept: "application/json" } });
+      const response = await fetch("/cart.js", {
+        headers: { Accept: "application/json" },
+      });
       cart = await readJson(response);
     } catch {
       document.documentElement.dataset.aiCartLineImages = "cart-fetch-failed";
@@ -93,7 +107,9 @@
       return;
     }
 
-    const aiItems = (cart.items || []).filter((item) => item.properties?.["_AI Image URL"]);
+    const aiItems = (cart.items || []).filter(
+      (item) => item.properties?.["_AI Image URL"],
+    );
     if (!aiItems.length) {
       document.documentElement.dataset.aiCartLineImages = "no-ai-items";
       isEnhancing = false;
@@ -102,7 +118,10 @@
 
     aiItems.forEach((item, index) => {
       const imageUrl = item.properties["_AI Image URL"];
-      const prompt = item.properties["AI Prompt"] || item.properties["_AI Prompt"] || "Generated AI image";
+      const prompt =
+        item.properties["AI Prompt"] ||
+        item.properties["_AI Prompt"] ||
+        "Generated AI image";
       const line = findCartLine(item, index);
       if (!line) return;
 
@@ -132,20 +151,25 @@
   (function (window2, originalFetch) {
     if (typeof originalFetch === "function") {
       window2.fetch = function () {
-        return originalFetch.apply(this, Array.prototype.slice.call(arguments)).then((response) => {
-          if (!response.ok) {
+        return originalFetch
+          .apply(this, Array.prototype.slice.call(arguments))
+          .then((response) => {
+            if (!response.ok) {
+              return response;
+            }
+            const url = arguments[0];
+            const urlString = typeof url === "string" ? url : url?.url || "";
+            // Crucial: Ignore '/cart.js' itself to prevent infinite loop recursion
+            if (
+              urlString.includes("/cart") &&
+              !urlString.includes("/cart.js")
+            ) {
+              setTimeout(() => {
+                enhanceCartLineImages();
+              }, 600);
+            }
             return response;
-          }
-          const url = arguments[0];
-          const urlString = typeof url === "string" ? url : url?.url || "";
-          // Crucial: Ignore '/cart.js' itself to prevent infinite loop recursion
-          if (urlString.includes("/cart") && !urlString.includes("/cart.js")) {
-            setTimeout(() => {
-              enhanceCartLineImages();
-            }, 600);
-          }
-          return response;
-        });
+          });
       };
     }
   })(window, window.fetch);
@@ -173,8 +197,12 @@
     image.alt = prompt;
 
     const mediaCell =
-      line.querySelector(".cart-item__media, .cart__image-wrapper, [class*='media']") ||
-      line.querySelector(".cart-item__details, .cart__meta, [class*='details']") ||
+      line.querySelector(
+        ".cart-item__media, .cart__image-wrapper, [class*='media']",
+      ) ||
+      line.querySelector(
+        ".cart-item__details, .cart__meta, [class*='details']",
+      ) ||
       line.querySelector("td");
     const productLink =
       line.querySelector("a[href*='/products/']") ||
@@ -196,7 +224,9 @@
 
   function findCartLine(item, index) {
     const candidates = Array.from(
-      document.querySelectorAll("[id^='CartItem-'], .cart-item, .cart-items tr, tr, li, .cart__item"),
+      document.querySelectorAll(
+        "[id^='CartItem-'], .cart-item, .cart-items tr, tr, li, .cart__item",
+      ),
     ).filter((candidate) => candidate.textContent?.trim());
     const itemUrl = String(item.url || "").split("?")[0];
     const byUrl = candidates.find((candidate) => {
@@ -217,7 +247,10 @@
     });
     if (byText) return byText;
 
-    return candidates.filter((candidate) => !candidate.querySelector("th"))[index] || null;
+    return (
+      candidates.filter((candidate) => !candidate.querySelector("th"))[index] ||
+      null
+    );
   }
 
   function cartProperties(image, variantTitle) {
@@ -235,7 +268,9 @@
       "AI Generated Image": "Selected",
     };
 
-    return Object.fromEntries(Object.entries(properties).filter(([, value]) => value));
+    return Object.fromEntries(
+      Object.entries(properties).filter(([, value]) => value),
+    );
   }
 
   function applyCartPropertiesToForm(form, properties) {
@@ -244,10 +279,22 @@
     });
   }
 
-  async function addGeneratedImageToCart({ root, studioConfig, form, selectedImage }) {
+  async function addGeneratedImageToCart({
+    root,
+    studioConfig,
+    form,
+    selectedImage,
+  }) {
     const variant = selectedVariant(form);
-    const variantId = variant.numericId || root.dataset.checkoutVariantId || studioConfig.checkoutVariantId || "";
-    const properties = cartProperties(selectedImage, selectedImage.variantTitle || variant.title);
+    const variantId =
+      variant.numericId ||
+      root.dataset.checkoutVariantId ||
+      studioConfig.checkoutVariantId ||
+      "";
+    const properties = cartProperties(
+      selectedImage,
+      selectedImage.variantTitle || variant.title,
+    );
 
     if (form) {
       applyCartPropertiesToForm(form, properties);
@@ -260,7 +307,9 @@
     }
 
     if (!variantId) {
-      throw new Error("Configure a Shopify checkout variant ID for this custom page.");
+      throw new Error(
+        "Configure a Shopify checkout variant ID for this custom page.",
+      );
     }
 
     const response = await fetch("/cart/add.js", {
@@ -278,158 +327,179 @@
 
     const data = await readJson(response);
     if (!response.ok) {
-      throw new Error(data.description || data.message || "Could not add generated image to cart.");
+      throw new Error(
+        data.description ||
+          data.message ||
+          "Could not add generated image to cart.",
+      );
     }
   }
 
-  document.querySelectorAll("[data-ai-image-generator]").forEach(async (root) => {
-    const button = root.querySelector("[data-ai-generate]");
-    const selectButton = root.querySelector("[data-ai-select]");
-    const addToCartButton = root.querySelector("[data-ai-add-to-cart]");
-    const textarea = root.querySelector("[data-ai-prompt]");
-    const status = root.querySelector("[data-ai-status]");
-    const preview = root.querySelector("[data-ai-preview]");
-    const previewToggle = root.querySelector("[data-ai-preview-toggle]");
-    const publicInput = root.querySelector("[data-ai-public]");
-    const optionsRoot = root.querySelector("[data-ai-studio-options]");
-    const promptTools = root.querySelector("[data-ai-prompt-tools]");
-    const form = productForm(root);
-    let selectedImage = null;
-    let generatedPreviewHtml = "";
-    const productPreviewHtml = root.dataset.productImage
-      ? `<img src="${root.dataset.productImage}" alt="${escapeHtml(root.dataset.productTitle || "Product image")}"><span>Product image</span>`
-      : "";
+  document
+    .querySelectorAll("[data-ai-image-generator]")
+    .forEach(async (root) => {
+      const button = root.querySelector("[data-ai-generate]");
+      const selectButton = root.querySelector("[data-ai-select]");
+      const addToCartButton = root.querySelector("[data-ai-add-to-cart]");
+      const textarea = root.querySelector("[data-ai-prompt]");
+      const status = root.querySelector("[data-ai-status]");
+      const preview = root.querySelector("[data-ai-preview]");
+      const previewToggle = root.querySelector("[data-ai-preview-toggle]");
+      const publicInput = root.querySelector("[data-ai-public]");
+      const optionsRoot = root.querySelector("[data-ai-studio-options]");
+      const promptTools = root.querySelector("[data-ai-prompt-tools]");
+      const form = productForm(root);
+      let selectedImage = null;
+      let generatedPreviewHtml = "";
+      const productPreviewHtml = root.dataset.productImage
+        ? `<img src="${root.dataset.productImage}" alt="${escapeHtml(root.dataset.productTitle || "Product image")}"><span>Product image</span>`
+        : "";
 
-    const studioConfig = await fetchStudioConfig(root);
-    renderStudioOptions(optionsRoot, studioConfig.optionGroups || []);
-    renderPromptTools(promptTools, studioConfig.promptTemplates || []);
-    prefillPromptFromUrl(textarea);
-    prefillOptionsFromUrl(root);
+      const studioConfig = await fetchStudioConfig(root);
+      renderStudioOptions(optionsRoot, studioConfig.optionGroups || []);
+      renderPromptTools(promptTools, studioConfig.promptTemplates || []);
+      prefillPromptFromUrl(textarea);
+      prefillOptionsFromUrl(root);
 
-    promptTools?.addEventListener("click", (event) => {
-      const template = event.target.closest("[data-ai-template]");
-      if (!template) return;
+      promptTools?.addEventListener("click", (event) => {
+        const template = event.target.closest("[data-ai-template]");
+        if (!template) return;
 
-      const optionSummary = selectedStudioOptions(root)
-        .map((option) => `${option.name}: ${option.value}`)
-        .join(", ");
-      textarea.value = `${template.dataset.aiTemplate}, for ${studioConfig.title || root.dataset.productTitle}, selected options: ${optionSummary}`;
-      textarea.focus();
-    });
+        const optionSummary = selectedStudioOptions(root)
+          .map((option) => `${option.name}: ${option.value}`)
+          .join(", ");
+        textarea.value = `${template.dataset.aiTemplate}, for ${studioConfig.title || root.dataset.productTitle}, selected options: ${optionSummary}`;
+        textarea.focus();
+      });
 
-    button.addEventListener("click", async () => {
-      const prompt = textarea.value.trim();
-      if (!prompt) {
-        status.textContent = "Enter an art direction first.";
-        return;
-      }
+      button.addEventListener("click", async () => {
+        const prompt = textarea.value.trim();
+        if (!prompt) {
+          status.textContent = "Enter an art direction first.";
+          return;
+        }
 
-      const variant = selectedVariant(form);
-      const selectedOptions = selectedStudioOptions(root);
-      const optionSummary = selectedOptions.map((option) => `${option.name}: ${option.value}`).join(", ");
-      const promptWithOptions = `${prompt}\n\nCustom product: ${studioConfig.title || root.dataset.productTitle}. Selected options: ${optionSummary || "Default options"}.`;
-      button.disabled = true;
-      selectButton.hidden = true;
-      addToCartButton.hidden = true;
-      status.textContent = publicInput.checked
-        ? "Generating artwork. Community posts will wait for admin approval."
-        : "Moderating prompt and generating artwork...";
-      preview.classList.add("is-loading");
+        const variant = selectedVariant(form);
+        const selectedOptions = selectedStudioOptions(root);
+        const optionSummary = selectedOptions
+          .map((option) => `${option.name}: ${option.value}`)
+          .join(", ");
+        const promptWithOptions = `${prompt}\n\nCustom product: ${studioConfig.title || root.dataset.productTitle}. Selected options: ${optionSummary || "Default options"}.`;
+        button.disabled = true;
+        selectButton.hidden = true;
+        addToCartButton.hidden = true;
+        status.textContent = publicInput.checked
+          ? "Generating artwork. Community posts will wait for admin approval."
+          : "Moderating prompt and generating artwork...";
+        preview.classList.add("is-loading");
 
-      try {
-        const response = await fetch(apiUrl(root.dataset.apiBase, "/api/generate-image"), {
+        try {
+          const response = await fetch(
+            apiUrl(root.dataset.apiBase, "/api/generate-image"),
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                shop: root.dataset.shop,
+                productId: root.dataset.productId,
+                productHandle: root.dataset.productHandle,
+                variantId: variant.id,
+                variantTitle: variant.title,
+                selectedOptions,
+                customerId: root.dataset.customerId,
+                customerEmail: root.dataset.customerEmail,
+                prompt: promptWithOptions,
+                originalPrompt: prompt,
+                visibility: publicInput.checked ? "PUBLIC" : "PRIVATE",
+              }),
+            },
+          );
+          const data = await readJson(response);
+          if (!data.success)
+            throw new Error(data.error || "Image generation failed.");
+
+          selectedImage = data.generation;
+          generatedPreviewHtml = `
+          <img src="${data.image}" alt="${escapeHtml(prompt)}">
+          <span>Generated by AI</span>
+        `;
+          preview.innerHTML = generatedPreviewHtml;
+          previewToggle.hidden = !productPreviewHtml;
+          setPreviewToggleState(root, "generated");
+          selectButton.hidden = false;
+          status.textContent =
+            data.generation?.moderationStatus === "PENDING"
+              ? "Image generated and sent to admin for community approval. Select it before adding to cart."
+              : "Image generated in your app media gallery. Select it before adding to cart.";
+        } catch (error) {
+          status.textContent = error.message;
+        } finally {
+          preview.classList.remove("is-loading");
+          button.disabled = false;
+        }
+      });
+
+      selectButton.addEventListener("click", async () => {
+        if (!selectedImage) return;
+
+        const properties = cartProperties(
+          selectedImage,
+          selectedImage.variantTitle || selectedVariant(form).title,
+        );
+        applyCartPropertiesToForm(form, properties);
+
+        await fetch(apiUrl(root.dataset.apiBase, "/api/customer-images"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             shop: root.dataset.shop,
-            productId: root.dataset.productId,
-            productHandle: root.dataset.productHandle,
-            variantId: variant.id,
-            variantTitle: variant.title,
-            selectedOptions,
+            generationId: selectedImage.id,
             customerId: root.dataset.customerId,
             customerEmail: root.dataset.customerEmail,
-            prompt: promptWithOptions,
-            originalPrompt: prompt,
-            visibility: publicInput.checked ? "PUBLIC" : "PRIVATE",
           }),
-        });
-        const data = await readJson(response);
-        if (!data.success) throw new Error(data.error || "Image generation failed.");
+        }).catch(function () {});
 
-        selectedImage = data.generation;
-        generatedPreviewHtml = `
-          <img src="${data.image}" alt="${escapeHtml(prompt)}">
-          <span>Generated by AI</span>
-        `;
-        preview.innerHTML = generatedPreviewHtml;
-        previewToggle.hidden = !productPreviewHtml;
-        setPreviewToggleState(root, "generated");
-        selectButton.hidden = false;
+        addToCartButton.hidden = false;
         status.textContent =
-          data.generation?.moderationStatus === "PENDING"
-            ? "Image generated and sent to admin for community approval. Select it before adding to cart."
-            : "Image generated in your app media gallery. Select it before adding to cart.";
-      } catch (error) {
-        status.textContent = error.message;
-      } finally {
-        preview.classList.remove("is-loading");
-        button.disabled = false;
-      }
+          "Selected image is attached to this cart item. Add it to cart when ready.";
+      });
+
+      addToCartButton.addEventListener("click", async () => {
+        if (!selectedImage) {
+          status.textContent = "Select a generated image first.";
+          return;
+        }
+
+        addToCartButton.disabled = true;
+        status.textContent = "Adding generated image to cart...";
+
+        try {
+          await addGeneratedImageToCart({
+            root,
+            studioConfig,
+            form,
+            selectedImage,
+          });
+          if (!form) window.location.href = "/cart";
+        } catch (error) {
+          status.textContent = error.message;
+          addToCartButton.disabled = false;
+        }
+      });
+
+      previewToggle?.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-ai-view]");
+        if (!button) return;
+
+        if (button.dataset.aiView === "product" && productPreviewHtml) {
+          preview.innerHTML = productPreviewHtml;
+          setPreviewToggleState(root, "product");
+        } else {
+          preview.innerHTML = generatedPreviewHtml;
+          setPreviewToggleState(root, "generated");
+        }
+      });
     });
-
-    selectButton.addEventListener("click", async () => {
-      if (!selectedImage) return;
-
-      const properties = cartProperties(selectedImage, selectedImage.variantTitle || selectedVariant(form).title);
-      applyCartPropertiesToForm(form, properties);
-
-      await fetch(apiUrl(root.dataset.apiBase, "/api/customer-images"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shop: root.dataset.shop,
-          generationId: selectedImage.id,
-          customerId: root.dataset.customerId,
-          customerEmail: root.dataset.customerEmail,
-        }),
-      }).catch(function () { });
-
-      addToCartButton.hidden = false;
-      status.textContent = "Selected image is attached to this cart item. Add it to cart when ready.";
-    });
-
-    addToCartButton.addEventListener("click", async () => {
-      if (!selectedImage) {
-        status.textContent = "Select a generated image first.";
-        return;
-      }
-
-      addToCartButton.disabled = true;
-      status.textContent = "Adding generated image to cart...";
-
-      try {
-        await addGeneratedImageToCart({ root, studioConfig, form, selectedImage });
-        if (!form) window.location.href = "/cart";
-      } catch (error) {
-        status.textContent = error.message;
-        addToCartButton.disabled = false;
-      }
-    });
-
-    previewToggle?.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-ai-view]");
-      if (!button) return;
-
-      if (button.dataset.aiView === "product" && productPreviewHtml) {
-        preview.innerHTML = productPreviewHtml;
-        setPreviewToggleState(root, "product");
-      } else {
-        preview.innerHTML = generatedPreviewHtml;
-        setPreviewToggleState(root, "generated");
-      }
-    });
-  });
 
   enhanceCartLineImages();
 
@@ -461,7 +531,9 @@
         customerEmail: root.dataset.customerEmail || "",
         productId: root.dataset.productId || "",
       });
-      const response = await fetch(apiUrl(root.dataset.apiBase, `${path}?${params.toString()}`));
+      const response = await fetch(
+        apiUrl(root.dataset.apiBase, `${path}?${params.toString()}`),
+      );
       const data = await readJson(response);
       return data.images || [];
     } catch (error) {
@@ -482,7 +554,9 @@
 
     try {
       const params = new URLSearchParams({ shop: root.dataset.shop || "" });
-      const response = await fetch(apiUrl(root.dataset.apiBase, `/api/studio-config?${params.toString()}`));
+      const response = await fetch(
+        apiUrl(root.dataset.apiBase, `/api/studio-config?${params.toString()}`),
+      );
       const data = await readJson(response);
       return data.studioProduct || fallback;
     } catch {
@@ -505,8 +579,11 @@
             <span>${escapeHtml(group.name)}</span>
             <select data-ai-option data-ai-option-name="${escapeHtml(group.name)}" data-ai-option-prompt="${escapeHtml(group.promptLabel || group.name)}">
               ${values
-            .map((value, valueIndex) => `<option value="${escapeHtml(value)}" ${valueIndex === 0 ? "selected" : ""}>${escapeHtml(value)}</option>`)
-            .join("")}
+                .map(
+                  (value, valueIndex) =>
+                    `<option value="${escapeHtml(value)}" ${valueIndex === 0 ? "selected" : ""}>${escapeHtml(value)}</option>`,
+                )
+                .join("")}
             </select>
           </label>
         `;
@@ -517,16 +594,22 @@
   function renderPromptTools(root, templates) {
     if (!root) return;
     root.innerHTML = (templates || [])
-      .map((template) => `<button type="button" class="aim-chip" data-ai-template="${escapeHtml(template)}">${escapeHtml(shortTemplateLabel(template))}</button>`)
+      .map(
+        (template) =>
+          `<button type="button" class="aim-chip" data-ai-template="${escapeHtml(template)}">${escapeHtml(shortTemplateLabel(template))}</button>`,
+      )
       .join("");
   }
 
   function selectedStudioOptions(root) {
-    return Array.from(root.querySelectorAll("[data-ai-option]")).map((input) => ({
-      name: input.dataset.aiOptionName || "",
-      promptLabel: input.dataset.aiOptionPrompt || input.dataset.aiOptionName || "",
-      value: input.value || "",
-    }));
+    return Array.from(root.querySelectorAll("[data-ai-option]")).map(
+      (input) => ({
+        name: input.dataset.aiOptionName || "",
+        promptLabel:
+          input.dataset.aiOptionPrompt || input.dataset.aiOptionName || "",
+        value: input.value || "",
+      }),
+    );
   }
 
   function selectedOptionsText(image) {
@@ -574,12 +657,17 @@
   }
 
   function shortTemplateLabel(template) {
-    const first = String(template || "").split(",")[0].trim();
-    return first.length > 24 ? `${first.slice(0, 21)}...` : first || "Prompt idea";
+    const first = String(template || "")
+      .split(",")[0]
+      .trim();
+    return first.length > 24
+      ? `${first.slice(0, 21)}...`
+      : first || "Prompt idea";
   }
 
   function renderCards(images, options) {
-    if (!images.length) return '<p class="aim-empty">No approved AI images yet.</p>';
+    if (!images.length)
+      return '<p class="aim-empty">No approved AI images yet.</p>';
     return images
       .map((image) => {
         const prompt = displayPrompt(image);
@@ -637,7 +725,8 @@
 
   function bindImageCardActions(root, grid) {
     grid.addEventListener("click", async (event) => {
-      const action = event.target.closest("[data-ai-card-action]")?.dataset.aiCardAction;
+      const action = event.target.closest("[data-ai-card-action]")?.dataset
+        .aiCardAction;
       const card = event.target.closest("[data-ai-image-json]");
       if (!action || !card) return;
 
@@ -650,27 +739,30 @@
       if (action === "request-public") {
         await requestPublicImage(root, image, event.target);
       }
-
     });
   }
 
   async function requestPublicImage(root, image, button) {
     button.disabled = true;
     try {
-      const response = await fetch(apiUrl(root.dataset.apiBase, "/api/customer-images"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shop: root.dataset.shop,
-          generationId: image.id,
-          customerId: root.dataset.customerId,
-          customerEmail: root.dataset.customerEmail,
-          intent: "request-public",
-        }),
-      });
+      const response = await fetch(
+        apiUrl(root.dataset.apiBase, "/api/customer-images"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shop: root.dataset.shop,
+            generationId: image.id,
+            customerId: root.dataset.customerId,
+            customerEmail: root.dataset.customerEmail,
+            intent: "request-public",
+          }),
+        },
+      );
       const result = await readJson(response);
       if (!result.success) throw new Error(result.error || "Request failed.");
-      button.outerHTML = '<span class="aim-chip aim-chip--static">Pending admin approval</span>';
+      button.outerHTML =
+        '<span class="aim-chip aim-chip--static">Pending admin approval</span>';
     } catch (error) {
       button.textContent = error.message;
       button.disabled = false;
@@ -679,8 +771,14 @@
 
   function showImageDetails({ root, image, studioConfig }) {
     const prompt = escapeHtml(displayPrompt(image));
-    const options = escapeHtml(selectedOptionsText(image) || "No options saved");
-    const creator = escapeHtml(image.customer?.displayName || image.customer?.email || "Community member");
+    const options = escapeHtml(
+      selectedOptionsText(image) || "No options saved",
+    );
+    const creator = escapeHtml(
+      image.customer?.displayName ||
+        image.customer?.email ||
+        "Community member",
+    );
     const modal = document.createElement("div");
     modal.className = "aim-modal";
     const optionGroups = studioConfig?.optionGroups || [];
@@ -692,12 +790,15 @@
         <p class="aim-modal__meta">${creator}</p>
         <p class="aim-modal__prompt">${prompt}</p>
         <p class="aim-modal__options">${options}</p>
-        ${optionGroups.length
-        ? `<div class="aim-modal__pickers">
+        ${
+          optionGroups.length
+            ? `<div class="aim-modal__pickers">
                 ${optionGroups
-          .map((group) => {
-            const values = Array.isArray(group.values) ? group.values : [];
-            return `
+                  .map((group) => {
+                    const values = Array.isArray(group.values)
+                      ? group.values
+                      : [];
+                    return `
                       <label>
                         <span>${escapeHtml(group.name)}</span>
                         <select data-ai-community-option data-ai-option-name="${escapeHtml(group.name)}">
@@ -705,49 +806,66 @@
                         </select>
                       </label>
                     `;
-          })
-          .join("")}
+                  })
+                  .join("")}
               </div>`
-        : ""
-      }
+            : ""
+        }
         <div class="aim-modal__actions">
           <button type="button" class="aim-button  aim-button--outline" data-ai-modal-action="use">Use this image</button>
           <button type="button" class="aim-button aim-button--filled" data-ai-modal-action="regenerate">Regenerate</button>
         </div>
       </div>
     `;
-    modal.querySelector("[data-ai-modal-action='use']")?.addEventListener("click", async () => {
-      const selectedOptionsOverride = selectedCommunityOptions(modal) || selectedOptionsText(image);
-      image.selectedOptionsOverride = selectedOptionsOverride;
-      await addGeneratedImageToCart({ root, studioConfig, form: null, selectedImage: image });
-      window.location.href = "/cart";
-    });
-    modal.querySelector("[data-ai-modal-action='regenerate']")?.addEventListener("click", () => {
-      const selectedOptionsOverride = selectedCommunityOptions(modal);
-      const promptValue = displayPrompt(image);
-      const url = root.dataset.configuratorUrl || "/pages/custom-configurator";
-      const params = new URLSearchParams({
-        referenceGeneration: image.id,
-        prompt: promptValue,
+    modal
+      .querySelector("[data-ai-modal-action='use']")
+      ?.addEventListener("click", async () => {
+        const selectedOptionsOverride =
+          selectedCommunityOptions(modal) || selectedOptionsText(image);
+        image.selectedOptionsOverride = selectedOptionsOverride;
+        await addGeneratedImageToCart({
+          root,
+          studioConfig,
+          form: null,
+          selectedImage: image,
+        });
+        window.location.href = "/cart";
       });
-      if (selectedOptionsOverride) params.set("selectedOptions", selectedOptionsOverride);
-      window.location.href = `${url}${url.includes("?") ? "&" : "?"}${params.toString()}`;
-    });
+    modal
+      .querySelector("[data-ai-modal-action='regenerate']")
+      ?.addEventListener("click", () => {
+        const selectedOptionsOverride = selectedCommunityOptions(modal);
+        const promptValue = displayPrompt(image);
+        const url =
+          root.dataset.configuratorUrl || "/pages/custom-configurator";
+        const params = new URLSearchParams({
+          referenceGeneration: image.id,
+          prompt: promptValue,
+        });
+        if (selectedOptionsOverride)
+          params.set("selectedOptions", selectedOptionsOverride);
+        window.location.href = `${url}${url.includes("?") ? "&" : "?"}${params.toString()}`;
+      });
     modal.addEventListener("click", (event) => {
-      if (event.target === modal || event.target.closest(".aim-modal__close")) modal.remove();
+      if (event.target === modal || event.target.closest(".aim-modal__close"))
+        modal.remove();
     });
     document.body.appendChild(modal);
   }
 
   function selectedCommunityOptions(root) {
-    const selections = Array.from(root.querySelectorAll("[data-ai-community-option]"))
+    const selections = Array.from(
+      root.querySelectorAll("[data-ai-community-option]"),
+    )
       .map((input) => `${input.dataset.aiOptionName}: ${input.value}`)
       .filter(Boolean);
     return selections.join(", ");
   }
 
   function shortTitle(prompt) {
-    const first = String(prompt || "").split(",")[0].trim();
+    const first = String(prompt || "")
+      .split(",")[0]
+      .trim();
     return first.length > 24 ? `${first.slice(0, 24)}...` : first || "Artwork";
   }
 
