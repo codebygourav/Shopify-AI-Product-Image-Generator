@@ -2,7 +2,7 @@
 
 client_id = "357dc9e36b9244048bc2c30f30992da2"
 name = "AI Image Manager"
-application_url = "https://ai.orvellastudio.com/apps/ai-image-manager"
+application_url = "https://shopify-ai.deploymeta.com"
 embedded = true
 
 [build]
@@ -25,9 +25,9 @@ optional_scopes = [ ]
 use_legacy_install_flow = false
 
 [auth]
-redirect_urls = [ "https://ai.orvellastudio.com/auth/callback" ]
+redirect_urls = [ "https://shopify-ai.deploymeta.com/auth/callback" ]
 
 [app_proxy]
-url = "https://example.com/api"
+url = "https://shopify-ai.deploymeta.com/api"
 subpath = "ai-image"
 prefix = "apps"
