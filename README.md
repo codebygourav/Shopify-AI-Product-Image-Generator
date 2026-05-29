@@ -66,7 +66,7 @@ Create `.env` with:
 SHOPIFY_API_KEY=
 SHOPIFY_API_SECRET=
 SHOPIFY_APP_URL=
-SCOPES=write_products,read_products,write_files,read_files,read_customers
+SCOPES=write_products,read_products,write_files,read_files,read_customers,write_customers
 DATABASE_URL=postgresql://apple@localhost:5432/ai_image_manager?schema=public
 OPENAI_API_KEY=
 IMAGE_GENERATION_MODE=test
@@ -126,7 +126,7 @@ npm run config:link
 3. Set scopes in `shopify.app.toml` or through Shopify CLI:
 
 ```text
-write_products,read_products,write_files,read_files,read_customers
+write_products,read_products,write_files,read_files,read_customers,write_customers
 ```
 
 4. Start local development:

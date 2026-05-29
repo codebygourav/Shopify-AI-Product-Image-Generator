@@ -1,14 +1,18 @@
 import { authenticate, unauthenticated } from "../shopify.server";
 import { generateAiImage } from "../services/openai-images.server";
 import { moderatePrompt } from "../services/moderation.server";
-import { getOrCreateCustomer, getOrCreateShop, parseShopSettings } from "../services/shops.server";
+import {
+  getOrCreateCustomer,
+  getOrCreateShop,
+  parseShopSettings,
+} from "../services/shops.server";
 import { corsJson, optionsResponse } from "../services/cors.server";
 import { isLiveGeneration } from "../services/generation-mode.server";
 import {
   createAiImageGeneration,
   updateAiImageGeneration,
   getAiImageGenerations,
-  updateCustomerProfile
+  updateCustomerProfile,
 } from "../services/metaobjects.server";
 
 export async function loader() {
@@ -54,7 +58,10 @@ export async function action({ request }) {
     }
 
     if (!shopDomain || !adminClient) {
-      return corsJson({ success: false, error: "Shop domain and admin authentication are required." });
+      return corsJson({
+        success: false,
+        error: "Shop domain and admin authentication are required.",
+      });
     }
 
     const shop = await getOrCreateShop(adminClient, shopDomain);
@@ -67,15 +74,23 @@ export async function action({ request }) {
     });
 
     if (customer?.isApproved === false) {
-        return corsJson({ success: false, error: "Your account is waiting for approval." });
+      return corsJson({
+        success: false,
+        error: "Your account is waiting for approval.",
+      });
     }
 
     const customerLimit = customer?.generationLimit;
     if (customer && Number.isInteger(customerLimit)) {
-      const gens = await getAiImageGenerations(adminClient, { customerId: customer.id });
+      const gens = await getAiImageGenerations(adminClient, {
+        customerId: customer.id,
+      });
       const used = gens.length;
       if (used >= customerLimit) {
-        return corsJson({ success: false, error: "Your image generation limit has been reached." });
+        return corsJson({
+          success: false,
+          error: "Your image generation limit has been reached.",
+        });
       }
     }
 
@@ -109,13 +124,21 @@ export async function action({ request }) {
     if (isLiveGeneration()) {
       const moderation = await moderatePrompt(studioPrompt);
       if (!moderation.allowed) {
-        const blocked = await updateAiImageGeneration(adminClient, generation.id, {
-          status: "BLOCKED",
-          moderationStatus: "REJECTED",
-          moderationReason: moderation.reason,
-        });
+        const blocked = await updateAiImageGeneration(
+          adminClient,
+          generation.id,
+          {
+            status: "BLOCKED",
+            moderationStatus: "REJECTED",
+            moderationReason: moderation.reason,
+          },
+        );
 
-        return corsJson({ success: false, error: moderation.reason, generation: blocked });
+        return corsJson({
+          success: false,
+          error: moderation.reason,
+          generation: blocked,
+        });
       }
     }
 
@@ -138,17 +161,20 @@ export async function action({ request }) {
       }),
     });
 
-    // Increment Customer's total generation count in their profile metafield
     if (customer?.id) {
-      const profile = await getOrCreateCustomer({
-        admin: adminClient,
-        shopId: shop.id,
-        shopifyCustomerId: customer.id,
-        email: customerEmail,
-      });
-      await updateCustomerProfile(adminClient, customer.id, {
-        totalGenerations: (profile.totalGenerations || 0) + 1
-      });
+      try {
+        const profile = await getOrCreateCustomer({
+          admin: adminClient,
+          shopId: shop.id,
+          shopifyCustomerId: customer.id,
+          email: customerEmail,
+        });
+        await updateCustomerProfile(adminClient, customer.id, {
+          totalGenerations: (profile.totalGenerations || 0) + 1,
+        });
+      } catch (profileError) {
+        console.warn("Customer profile update failed", profileError);
+      }
     }
 
     console.log("OpenAI Usage Log (Local Node Server logs):", {
