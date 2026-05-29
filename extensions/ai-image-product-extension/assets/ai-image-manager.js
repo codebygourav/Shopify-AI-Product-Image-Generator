@@ -27,7 +27,7 @@
     throw new Error(
       response.status === 404
         ? "AI app proxy was not found. Use /apps/ai-image as the block API base URL and update the app proxy if needed."
-        : "AI app returned HTML instead of JSON. Check the block App API base URL and Shopify app proxy settings.",
+        : `AI app returned ${response.status || "a non-JSON response"} from ${response.url || "the configured API URL"}. Check the block App API base URL and Shopify app proxy settings.`,
     );
   }
 

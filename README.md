@@ -69,6 +69,8 @@ SHOPIFY_APP_URL=
 SCOPES=write_products,read_products,write_files,read_files,read_customers,write_customers
 DATABASE_URL=postgresql://apple@localhost:5432/ai_image_manager?schema=public
 OPENAI_API_KEY=
+OPENAI_IMAGE_MODEL=gpt-image-1.5
+OPENAI_MODERATION_MODEL=omni-moderation-latest
 IMAGE_GENERATION_MODE=test
 TEST_IMAGE_URL=https://dummyimage.com/1024x1024/7d7355/ffffff.png&text=Generated+AI+Image
 ```
