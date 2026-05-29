@@ -10,7 +10,7 @@ export async function moderatePrompt(prompt) {
   }
 
   const response = await openai.moderations.create({
-    model: "omni-moderation-latest",
+    model: "text-moderation-latest",
     input: prompt,
   });
 
