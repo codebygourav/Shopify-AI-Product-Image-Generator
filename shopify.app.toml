@@ -2,7 +2,7 @@
 
 client_id = "357dc9e36b9244048bc2c30f30992da2"
 name = "AI Image Manager"
-application_url = "http://localhost:3000"
+application_url = "https://ai.orvellastudio.com/apps/ai-image-manager"
 embedded = true
 
 [build]
@@ -25,7 +25,7 @@ optional_scopes = [ ]
 use_legacy_install_flow = false
 
 [auth]
-redirect_urls = [ "http://localhost:3000/auth/callback" ]
+redirect_urls = [ "https://ai.orvellastudio.com/auth/callback" ]
 
 [app_proxy]
 url = "https://example.com/api"
