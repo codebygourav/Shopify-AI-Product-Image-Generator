@@ -2,8 +2,7 @@ import {
   getShopSettings,
   updateShopSettings,
   getCustomerProfile,
-  updateCustomerProfile,
-  ensureMetaobjectDefinition
+  ensureMetaobjectDefinition,
 } from "./metaobjects.server";
 
 export async function getOrCreateShop(admin, shopDomain) {
@@ -91,22 +90,20 @@ export function parseShopSettings(settings) {
   };
 }
 
-export async function getOrCreateCustomer({ admin, shopId, shopifyCustomerId, email }) {
+export async function getOrCreateCustomer({
+  admin,
+  shopId,
+  shopifyCustomerId,
+  email,
+}) {
   if (!shopifyCustomerId) return null;
 
-  // Fetch the customer's custom approval/limit profile from their Shopify Customer metafields
-  let profile = await getCustomerProfile(admin, shopifyCustomerId);
+  const profile = (await getCustomerProfile(admin, shopifyCustomerId)) || {
+    isApproved: true,
+    generationLimit: null,
+    totalGenerations: 0,
+  };
 
-  if (!profile) {
-    // If new, initialize their profile with defaults
-    profile = await updateCustomerProfile(admin, shopifyCustomerId, {
-      isApproved: true,
-      generationLimit: null,
-      totalGenerations: 0,
-    });
-  }
-
-  // Map to the object structure expected by the application
   return {
     id: shopifyCustomerId,
     shopId,
