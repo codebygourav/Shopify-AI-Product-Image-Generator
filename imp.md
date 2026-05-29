@@ -6,6 +6,3 @@ docker compose restart web
 npm run deploy
 
 git fetch --all
-
-docker compose down -v
-docker compose up -d --build
