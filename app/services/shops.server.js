@@ -15,7 +15,11 @@ export async function getOrCreateShop(admin, shopDomain) {
   if (!settingsStr) {
     settings = defaultShopSettings();
     settingsStr = JSON.stringify(settings);
-    await updateShopSettings(admin, settingsStr);
+    try {
+      await updateShopSettings(admin, settingsStr);
+    } catch (settingsError) {
+      console.warn("Shop settings metafield update failed", settingsError);
+    }
   } else {
     settings = parseShopSettings(settingsStr);
   }
