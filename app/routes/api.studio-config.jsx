@@ -1,3 +1,4 @@
+import { unauthenticated } from "../shopify.server";
 import { getOrCreateShop, parseShopSettings } from "../services/shops.server";
 import { corsJson, optionsResponse } from "../services/cors.server";
 
@@ -14,11 +15,17 @@ export async function loader({ request }) {
     return corsJson({ success: false, error: "shop is required" }, { status: 400 });
   }
 
-  const shop = await getOrCreateShop(shopDomain);
-  const settings = parseShopSettings(shop.settings);
+  try {
+    const { admin } = await unauthenticated.admin(shopDomain);
+    const shop = await getOrCreateShop(admin, shopDomain);
+    const settings = parseShopSettings(shop.settings);
 
-  return corsJson({
-    success: true,
-    studioProduct: settings.studioProduct,
-  });
+    return corsJson({
+      success: true,
+      studioProduct: settings.studioProduct,
+    });
+  } catch (err) {
+    console.error("api.studio-config error", err);
+    return corsJson({ success: false, error: err.message }, { status: 500 });
+  }
 }
