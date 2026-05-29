@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   web:
@@ -17,7 +17,8 @@ services:
       - SHOPIFY_API_SECRET=${SHOPIFY_API_SECRET}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - IMAGE_GENERATION_MODE=${IMAGE_GENERATION_MODE:-live}
-      - APP_URL=${APP_URL}
+      - SHOPIFY_APP_URL=${APP_URL}
+      - SCOPES=${SCOPES}
     depends_on:
       db:
         condition: service_healthy
@@ -32,7 +33,11 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\""]
+      test:
+        [
+          "CMD-SHELL",
+          'mysqladmin ping -h localhost -uroot -p"$$MYSQL_ROOT_PASSWORD"',
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
