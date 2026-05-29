@@ -96,9 +96,9 @@ export async function action({ request }) {
 
     const optionSummary = Array.isArray(selectedOptions)
       ? selectedOptions
-          .filter((option) => option?.name && option?.value)
-          .map((option) => `${option.name}: ${option.value}`)
-          .join(", ")
+        .filter((option) => option?.name && option?.value)
+        .map((option) => `${option.name}: ${option.value}`)
+        .join(", ")
       : "";
     const studioPrompt = [
       prompt.trim(),
@@ -197,6 +197,12 @@ export async function action({ request }) {
     });
   } catch (error) {
     console.error("Image generation failed", error);
+    try {
+      const fs = await import("fs");
+      fs.writeFileSync("./error_debug.log", `${new Date().toISOString()}\nError: ${error.message}\nStack: ${error.stack}\n`);
+    } catch (e) {
+      console.error("Failed to write debug log", e);
+    }
     return corsJson({
       success: false,
       error: error.message,
