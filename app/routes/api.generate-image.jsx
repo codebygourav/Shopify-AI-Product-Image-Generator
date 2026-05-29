@@ -35,7 +35,7 @@ export async function action({ request }) {
     } = body;
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length < 3) {
-      return corsJson({ success: false, error: "Prompt is required." }, { status: 400 });
+      return corsJson({ success: false, error: "Prompt is required." });
     }
 
     let shopDomain = shopFromBody;
@@ -54,10 +54,7 @@ export async function action({ request }) {
     }
 
     if (!shopDomain || !adminClient) {
-      return corsJson(
-        { success: false, error: "Shop domain and admin authentication are required." },
-        { status: 401 },
-      );
+      return corsJson({ success: false, error: "Shop domain and admin authentication are required." });
     }
 
     const shop = await getOrCreateShop(adminClient, shopDomain);
@@ -70,10 +67,7 @@ export async function action({ request }) {
     });
 
     if (customer?.isApproved === false) {
-        return corsJson(
-          { success: false, error: "Your account is waiting for approval." },
-          { status: 403 },
-        );
+        return corsJson({ success: false, error: "Your account is waiting for approval." });
     }
 
     const customerLimit = customer?.generationLimit;
@@ -81,10 +75,7 @@ export async function action({ request }) {
       const gens = await getAiImageGenerations(adminClient, { customerId: customer.id });
       const used = gens.length;
       if (used >= customerLimit) {
-        return corsJson(
-          { success: false, error: "Your image generation limit has been reached." },
-          { status: 403 },
-        );
+        return corsJson({ success: false, error: "Your image generation limit has been reached." });
       }
     }
 
@@ -124,10 +115,7 @@ export async function action({ request }) {
           moderationReason: moderation.reason,
         });
 
-        return corsJson(
-          { success: false, error: moderation.reason, generation: blocked },
-          { status: 422 },
-        );
+        return corsJson({ success: false, error: moderation.reason, generation: blocked });
       }
     }
 
@@ -181,6 +169,6 @@ export async function action({ request }) {
     return corsJson({
       success: false,
       error: error.message,
-    }, { status: 500 });
+    });
   }
 }

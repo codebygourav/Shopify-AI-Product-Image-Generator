@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { generationMode, isLiveGeneration, testImageUrl } from "./generation-mode.server";
 
-const MODEL = "gpt-image-1";
+const MODEL = "dall-e-3";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
