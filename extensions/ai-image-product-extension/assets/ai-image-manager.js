@@ -417,6 +417,11 @@
           const data = await readJson(response);
           if (!data.success)
             throw new Error(data.error || "Image generation failed.");
+          if (!data.image || String(data.image).startsWith("data:")) {
+            throw new Error(
+              "Generated image was not uploaded to a public image URL.",
+            );
+          }
 
           selectedImage = data.generation;
           generatedPreviewHtml = `

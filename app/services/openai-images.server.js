@@ -33,20 +33,19 @@ export async function generateAiImage(prompt) {
   });
 
   const image = result.data?.[0];
-  const imageUrl = image?.url || asDataUrl(image?.b64_json);
+  const imageUrl = image?.url || null;
+  const base64Data = image?.b64_json || null;
 
-  if (!imageUrl) {
+  if (!imageUrl && !base64Data) {
     throw new Error("OpenAI did not return an image URL or image data.");
   }
 
   return {
     imageUrl,
+    base64Data,
+    mimeType: "image/png",
     model: MODEL,
     requestId: result._request_id,
     mode: generationMode(),
   };
-}
-
-function asDataUrl(base64) {
-  return base64 ? `data:image/png;base64,${base64}` : null;
 }
