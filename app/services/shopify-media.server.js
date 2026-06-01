@@ -274,6 +274,63 @@ export async function uploadImageToShopifyFiles({
   return fileUrl;
 }
 
+export async function saveGeneratedImageToPublicUrl({
+  imageUrl,
+  base64Data,
+  mimeType = "image/png",
+  publicBaseUrl,
+}) {
+  const normalizedPublicBaseUrl = normalizePublicBaseUrl(publicBaseUrl);
+  if (!normalizedPublicBaseUrl) {
+    throw new Error("App public URL is required to save generated images.");
+  }
+
+  let buffer;
+  let contentType = mimeType || "image/png";
+
+  if (base64Data) {
+    buffer = Buffer.from(base64Data, "base64");
+  } else if (imageUrl?.startsWith("data:")) {
+    const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) {
+      throw new Error("Invalid generated image data URL.");
+    }
+    contentType = match[1];
+    buffer = Buffer.from(match[2], "base64");
+  } else if (imageUrl) {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Could not fetch generated image: ${response.status}`);
+    }
+    contentType = response.headers.get("content-type") || "image/png";
+    buffer = Buffer.from(await response.arrayBuffer());
+  }
+
+  if (!buffer?.length) {
+    throw new Error("OpenAI did not return image data that can be saved.");
+  }
+
+  const extension =
+    contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "png";
+  const crypto = await import("node:crypto");
+  const filename = `ai-generated-${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const fs = await import("node:fs/promises");
+  const path = await import("node:path");
+  const uploadDir = path.join(process.cwd(), "public", "ai-generated");
+
+  await fs.mkdir(uploadDir, { recursive: true });
+  await fs.writeFile(path.join(uploadDir, filename), buffer);
+
+  return `${normalizedPublicBaseUrl}/ai-generated/${filename}`;
+}
+
+function normalizePublicBaseUrl(publicBaseUrl) {
+  if (!publicBaseUrl) return "";
+  const value = String(publicBaseUrl).trim().replace(/\/$/, "");
+  if (!value) return "";
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
 function assertNoGraphqlErrors(json) {
   const errors = json?.errors || [];
   if (errors.length) {
