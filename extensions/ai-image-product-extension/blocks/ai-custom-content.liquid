@@ -1,0 +1,27 @@
+{{ 'ai-image-manager.css' | asset_url | stylesheet_tag }}
+
+<div class="custom-content custom-content-full">
+  <p>{{ block.settings.custom_description }}</p>
+  <h2>{{ block.settings.custom_heading }}</h2>
+</div>
+
+{% schema %}
+{
+  "name": "AI Custom Content",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "custom_heading",
+      "label": "Custom Heading",
+      "default": "Explore Our Community Gallery"
+    },
+    {
+      "type": "textarea",
+      "id": "custom_description",
+      "label": "Custom Description",
+      "default": "Browse AI-generated artwork created by our community and add your favorites to cart."
+    }
+  ]
+}
+{% endschema %}

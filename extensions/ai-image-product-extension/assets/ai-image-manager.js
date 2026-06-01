@@ -681,18 +681,31 @@
         const title = escapeHtml(shortTitle(prompt));
 
         if (options.mode === "community") {
-          return `<div class="aim-card aim_card_community_main" data-generation-id="${image.id}" data-ai-image-json="${imageJson}">
-          <article class="aim-card aim-card--community">
-            <img src="${image.imageUrl}" alt="${title}">
-            <div class="aim-card__overlay">
-              <span class="aim-card__title">${title}</span>
+          return `
+  <div class="aim_card_community_main"
+       data-generation-id="${image.id}"
+       data-ai-image-json="${imageJson}">
 
-            </div>
-          </article>
-          <div class="aim_card__actions">
-          <button type="button" class="aim-button aim-button--primary aim_view_detail_com" data-ai-card-action="details">View details</button>
-          </div>
-        </div>`;
+    <article class="aim-card aim-card--community">
+      <img src="${image.imageUrl}" alt="${title}">
+
+      <div class="aim-card__overlay"></div>
+
+      <div class="aim_card__actions">
+        <button
+          type="button"
+          class="aim-button aim-button--primary aim_view_detail_com"
+          data-ai-card-action="details">
+          Add to Cart
+        </button>
+      </div>
+    </article>
+
+    <div class="aim-card__title-bottom">
+      ${title}
+    </div>
+
+  </div>`;
         }
 
         return `
