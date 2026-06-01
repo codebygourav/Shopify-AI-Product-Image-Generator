@@ -6,7 +6,7 @@ import {
   getAiImageGenerations,
   getAiImageGeneration,
   updateAiImageGeneration,
-  deleteAiImageGeneration
+  deleteAiImageGeneration,
 } from "../services/metaobjects.server";
 
 type MediaImage = {
@@ -25,12 +25,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const url = new URL(request.url);
   const selectedImageId = url.searchParams.get("image");
-  await getOrCreateShop(admin, session.shop);
+  const shop = await getOrCreateShop(admin, session.shop);
 
-  const [images, selectedImage] = await Promise.all([
-    getAiImageGenerations(admin),
+  const [rawImages, selectedImage] = await Promise.all([
+    getAiImageGenerations(admin, { shopId: shop.id }),
     selectedImageId ? getAiImageGeneration(admin, selectedImageId) : null,
   ]);
+  const images = rawImages.filter((image) => image !== null) as MediaImage[];
 
   return { images, selectedImage };
 };
@@ -92,26 +93,63 @@ function MediaTable({ images }: { images: MediaImage[] }) {
             <tr key={image.id} style={{ borderBottom: "1px solid #eee" }}>
               <td style={{ padding: 10, width: 76 }}>
                 {image.imageUrl ? (
-                  <img src={image.imageUrl} alt={displayPrompt(image.metadata, image.prompt)} style={{ width: 56, aspectRatio: "1", objectFit: "cover", borderRadius: 6 }} />
+                  <img
+                    src={image.imageUrl}
+                    alt={displayPrompt(image.metadata, image.prompt)}
+                    style={{
+                      width: 56,
+                      aspectRatio: "1",
+                      objectFit: "cover",
+                      borderRadius: 6,
+                    }}
+                  />
                 ) : null}
               </td>
               <td style={{ padding: 10, maxWidth: 420 }}>
                 <details>
                   <summary style={{ cursor: "pointer" }}>
-                    <div style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      <s-text>{displayPrompt(image.metadata, image.prompt)}</s-text>
+                    <div
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <s-text>
+                        {displayPrompt(image.metadata, image.prompt)}
+                      </s-text>
                     </div>
-                    <div style={{ display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      <s-text tone="neutral">{selectedOptionsSummary(image.metadata) || "No options"}</s-text>
+                    <div
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 1,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <s-text tone="neutral">
+                        {selectedOptionsSummary(image.metadata) || "No options"}
+                      </s-text>
                     </div>
                   </summary>
                   <s-text>{displayPrompt(image.metadata, image.prompt)}</s-text>
-                  <s-text tone="neutral">{selectedOptionsSummary(image.metadata) || "No options"}</s-text>
+                  <s-text tone="neutral">
+                    {selectedOptionsSummary(image.metadata) || "No options"}
+                  </s-text>
                 </details>
               </td>
-              <td style={{ padding: 10 }}>{image.customer?.email || image.customer?.displayName || "Guest"}</td>
-              <td style={{ padding: 10 }}>{image.status} · {image.visibility} · {image.moderationStatus}</td>
-              <td style={{ padding: 10 }}>{new Date(image.createdAt).toLocaleDateString()}</td>
+              <td style={{ padding: 10 }}>
+                {image.customer?.email ||
+                  image.customer?.displayName ||
+                  "Guest"}
+              </td>
+              <td style={{ padding: 10 }}>
+                {image.status} · {image.visibility} · {image.moderationStatus}
+              </td>
+              <td style={{ padding: 10 }}>
+                {new Date(image.createdAt).toLocaleDateString()}
+              </td>
               <td style={{ padding: 10 }}>
                 <Link to={`/app/gallery?image=${image.id}`}>View details</Link>
               </td>
@@ -126,28 +164,82 @@ function MediaTable({ images }: { images: MediaImage[] }) {
 function ImageDetail({ image }: { image: MediaImage }) {
   return (
     <s-box padding="base" borderWidth="base" borderRadius="base">
-      <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 18, alignItems: "start" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "180px 1fr",
+          gap: 18,
+          alignItems: "start",
+        }}
+      >
         {image.imageUrl ? (
-          <img src={image.imageUrl} alt={displayPrompt(image.metadata, image.prompt)} style={{ width: 180, aspectRatio: "1", objectFit: "cover", borderRadius: 8 }} />
+          <img
+            src={image.imageUrl}
+            alt={displayPrompt(image.metadata, image.prompt)}
+            style={{
+              width: 180,
+              aspectRatio: "1",
+              objectFit: "cover",
+              borderRadius: 8,
+            }}
+          />
         ) : null}
         <s-stack direction="block" gap="small">
           <s-heading>{displayPrompt(image.metadata, image.prompt)}</s-heading>
-          <s-text>{selectedOptionsSummary(image.metadata) || "No options saved"}</s-text>
+          <s-text>
+            {selectedOptionsSummary(image.metadata) || "No options saved"}
+          </s-text>
           <s-text tone="neutral">
-            {image.status} · {image.visibility} · {image.moderationStatus} · {image.customer?.email || "Guest"}
+            {image.status} · {image.visibility} · {image.moderationStatus} ·{" "}
+            {image.customer?.email || "Guest"}
           </s-text>
           <Form method="post">
             <input type="hidden" name="id" value={image.id} />
             <s-stack direction="inline" gap="small">
               {image.visibility === "PUBLIC" ? (
                 <>
-                  <button type="submit" name="intent" value="image:approve" style={{ padding: "8px 10px" }}>Approve for community</button>
-                  <button type="submit" name="intent" value="image:reject" style={{ padding: "8px 10px" }}>Reject community post</button>
+                  <button
+                    type="submit"
+                    name="intent"
+                    value="image:approve"
+                    style={{ padding: "8px 10px" }}
+                  >
+                    Approve for community
+                  </button>
+                  <button
+                    type="submit"
+                    name="intent"
+                    value="image:reject"
+                    style={{ padding: "8px 10px" }}
+                  >
+                    Reject community post
+                  </button>
                 </>
               ) : null}
-              <button type="submit" name="intent" value="image:public" style={{ padding: "8px 10px" }}>Publish to community</button>
-              <button type="submit" name="intent" value="image:private" style={{ padding: "8px 10px" }}>Keep private</button>
-              <button type="submit" name="intent" value="image:delete" style={{ padding: "8px 10px" }}>Delete</button>
+              <button
+                type="submit"
+                name="intent"
+                value="image:public"
+                style={{ padding: "8px 10px" }}
+              >
+                Publish to community
+              </button>
+              <button
+                type="submit"
+                name="intent"
+                value="image:private"
+                style={{ padding: "8px 10px" }}
+              >
+                Keep private
+              </button>
+              <button
+                type="submit"
+                name="intent"
+                value="image:delete"
+                style={{ padding: "8px 10px" }}
+              >
+                Delete
+              </button>
               <s-link href="/app/gallery">Close details</s-link>
             </s-stack>
           </Form>
@@ -175,7 +267,13 @@ function selectedOptionsSummary(metadata: string | null) {
   if (!Array.isArray(parsed.selectedOptions)) return "";
 
   return parsed.selectedOptions
-    .filter((option: { name?: string; value?: string }) => option.name && option.value)
-    .map((option: { name: string; value: string }) => `${option.name}: ${option.value}`)
+    .filter(
+      (option: { name?: string; value?: string }) =>
+        option.name && option.value,
+    )
+    .map(
+      (option: { name: string; value: string }) =>
+        `${option.name}: ${option.value}`,
+    )
     .join(", ");
 }

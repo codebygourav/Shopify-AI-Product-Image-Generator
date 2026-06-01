@@ -4,7 +4,7 @@ import { corsJson, optionsResponse } from "../services/cors.server";
 import {
   getAiImageGenerations,
   getAiImageGeneration,
-  updateAiImageGeneration
+  updateAiImageGeneration,
 } from "../services/metaobjects.server";
 
 export async function loader({ request }) {
@@ -15,7 +15,10 @@ export async function loader({ request }) {
   const productId = url.searchParams.get("productId");
 
   if (!shopDomain) {
-    return corsJson({ success: false, error: "shop is required" }, { status: 400 });
+    return corsJson(
+      { success: false, error: "shop is required" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -33,13 +36,16 @@ export async function loader({ request }) {
     }
 
     const images = await getAiImageGenerations(admin, {
+      shopId: shop.id,
       customerId: customer.id,
       status: "COMPLETED",
       ...(productId ? { productId } : {}),
     });
 
     // Filter out rejected moderation images
-    const filteredImages = images.filter(img => img.moderationStatus !== "REJECTED").slice(0, 40);
+    const filteredImages = images
+      .filter((img) => img.moderationStatus !== "REJECTED")
+      .slice(0, 40);
 
     return corsJson({ success: true, images: filteredImages });
   } catch (err) {
@@ -52,10 +58,19 @@ export async function action({ request }) {
   if (request.method === "OPTIONS") return optionsResponse();
 
   const body = await request.json();
-  const { shop: shopDomain, generationId, customerId, customerEmail, intent = "select-cart" } = body;
+  const {
+    shop: shopDomain,
+    generationId,
+    customerId,
+    customerEmail,
+    intent = "select-cart",
+  } = body;
 
   if (!shopDomain || !generationId) {
-    return corsJson({ success: false, error: "shop and generationId are required" }, { status: 400 });
+    return corsJson(
+      { success: false, error: "shop and generationId are required" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -70,7 +85,10 @@ export async function action({ request }) {
 
     const image = await getAiImageGeneration(admin, generationId);
     if (!image) {
-      return corsJson({ success: false, error: "Image was not found." }, { status: 404 });
+      return corsJson(
+        { success: false, error: "Image was not found." },
+        { status: 404 },
+      );
     }
 
     const data =

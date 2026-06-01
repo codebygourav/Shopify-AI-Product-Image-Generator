@@ -8,11 +8,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const shop = await getOrCreateShop(admin, session.shop);
 
-  const allGenerations = await getAiImageGenerations(admin);
-  
+  const allGenerations = (
+    await getAiImageGenerations(admin, {
+      shopId: shop.id,
+    })
+  ).filter((gen) => gen !== null);
+
   const total = allGenerations.length;
-  const publicCount = allGenerations.filter(gen => gen.visibility === "PUBLIC").length;
-  const pendingModeration = allGenerations.filter(gen => gen.moderationStatus === "PENDING").length;
+  const publicCount = allGenerations.filter(
+    (gen) => gen.visibility === "PUBLIC",
+  ).length;
+  const pendingModeration = allGenerations.filter(
+    (gen) => gen.moderationStatus === "PENDING",
+  ).length;
   const recent = allGenerations.slice(0, 6);
 
   return { shop: session.shop, total, publicCount, pendingModeration, recent };
@@ -39,16 +47,36 @@ export default function Index() {
                 <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
                   <td style={{ padding: 10, width: 76 }}>
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.prompt} style={{ width: 56, aspectRatio: "1", objectFit: "cover", borderRadius: 6 }} />
+                      <img
+                        src={item.imageUrl}
+                        alt={item.prompt}
+                        style={{
+                          width: 56,
+                          aspectRatio: "1",
+                          objectFit: "cover",
+                          borderRadius: 6,
+                        }}
+                      />
                     ) : null}
                   </td>
                   <td style={{ padding: 10, maxWidth: 520 }}>
-                    <div style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
                       <s-text>{item.prompt}</s-text>
                     </div>
                   </td>
-                  <td style={{ padding: 10 }}>{item.customer?.email || "Guest"}</td>
-                  <td style={{ padding: 10 }}>{item.status} · {item.visibility}</td>
+                  <td style={{ padding: 10 }}>
+                    {item.customer?.email || "Guest"}
+                  </td>
+                  <td style={{ padding: 10 }}>
+                    {item.status} · {item.visibility}
+                  </td>
                 </tr>
               ))}
             </tbody>

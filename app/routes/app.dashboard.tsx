@@ -7,7 +7,7 @@ import {
   getAiImageGenerations,
   updateCustomerProfile,
   updateAiImageGeneration,
-  deleteAiImageGeneration
+  deleteAiImageGeneration,
 } from "../services/metaobjects.server";
 
 type MetadataOption = { name?: string; value?: string };
@@ -28,21 +28,27 @@ type CustomerDetailData = {
   isApproved: boolean;
   generationLimit?: number | null;
   generations: CustomerImage[];
+  _count: { generations: number };
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const url = new URL(request.url);
   const selectedCustomerId = url.searchParams.get("customer");
-  await getOrCreateShop(admin, session.shop);
+  const shop = await getOrCreateShop(admin, session.shop);
 
-  const customers = await getCustomers(admin);
-  let selectedCustomer = null;
+  const customers = (await getCustomers(admin)) as CustomerDetailData[];
+  let selectedCustomer: CustomerDetailData | null = null;
 
   if (selectedCustomerId) {
-    const activeCust = customers.find(c => c.id === selectedCustomerId);
+    const activeCust = customers.find((c) => c.id === selectedCustomerId);
     if (activeCust) {
-      const generations = await getAiImageGenerations(admin, { customerId: selectedCustomerId });
+      const generations = (
+        await getAiImageGenerations(admin, {
+          shopId: shop.id,
+          customerId: selectedCustomerId,
+        })
+      ).filter((image) => image !== null) as CustomerImage[];
       selectedCustomer = {
         ...activeCust,
         generations,
@@ -61,12 +67,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = String(form.get("intent") || "");
 
   if (intent.startsWith("customer:")) {
-    const customers = await getCustomers(admin);
-    const customer = customers.find(c => c.id === id);
+    const customers = (await getCustomers(admin)) as CustomerDetailData[];
+    const customer = customers.find((c) => c.id === id);
     if (!customer) return null;
 
-    const generationLimitValue = String(form.get("generationLimit") || "").trim();
-    const generationLimit = generationLimitValue === "" ? null : Number(generationLimitValue);
+    const generationLimitValue = String(
+      form.get("generationLimit") || "",
+    ).trim();
+    const generationLimit =
+      generationLimitValue === "" ? null : Number(generationLimitValue);
 
     await updateCustomerProfile(admin, customer.id, {
       ...(intent === "customer:approve" ? { isApproved: true } : {}),
@@ -103,7 +112,9 @@ export default function Customers() {
   return (
     <s-page heading="Customers">
       <s-section heading="Customer accounts">
-        {selectedCustomer ? <CustomerDetail customer={selectedCustomer} /> : null}
+        {selectedCustomer ? (
+          <CustomerDetail customer={selectedCustomer} />
+        ) : null}
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -116,16 +127,37 @@ export default function Customers() {
             </thead>
             <tbody>
               {customers.map((customer) => (
-                <tr key={customer.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: 10 }}>{customer.displayName || customer.email || customer.shopifyCustomerId || "Guest user"}</td>
-                  <td style={{ padding: 10 }}>{customer.isApproved ? "Approved" : "Blocked"}</td>
+                <tr
+                  key={customer.id}
+                  style={{ borderBottom: "1px solid #eee" }}
+                >
+                  <td style={{ padding: 10 }}>
+                    {customer.displayName ||
+                      customer.email ||
+                      customer.shopifyCustomerId ||
+                      "Guest user"}
+                  </td>
+                  <td style={{ padding: 10 }}>
+                    {customer.isApproved ? "Approved" : "Blocked"}
+                  </td>
                   <td style={{ padding: 10 }}>{customer._count.generations}</td>
                   <td style={{ padding: 10 }}>
                     <s-stack direction="inline" gap="small">
-                      <Link to={`/app/dashboard?customer=${customer.id}`}>View details</Link>
+                      <Link to={`/app/dashboard?customer=${customer.id}`}>
+                        View details
+                      </Link>
                       <Form method="post">
                         <input type="hidden" name="id" value={customer.id} />
-                        <button type="submit" name="intent" value={customer.isApproved ? "customer:block" : "customer:approve"} style={{ padding: "8px 10px" }}>
+                        <button
+                          type="submit"
+                          name="intent"
+                          value={
+                            customer.isApproved
+                              ? "customer:block"
+                              : "customer:approve"
+                          }
+                          style={{ padding: "8px 10px" }}
+                        >
                           {customer.isApproved ? "Block" : "Approve"}
                         </button>
                       </Form>
@@ -145,11 +177,26 @@ function CustomerDetail({ customer }: { customer: CustomerDetailData }) {
   return (
     <s-box padding="base" borderWidth="base" borderRadius="base">
       <s-stack direction="block" gap="base">
-        <s-heading>{customer.displayName || customer.email || customer.shopifyCustomerId || "Guest user"}</s-heading>
-        <s-text tone="neutral">{customer.isApproved ? "Approved" : "Blocked"} · {customer.generations.length} images</s-text>
+        <s-heading>
+          {customer.displayName ||
+            customer.email ||
+            customer.shopifyCustomerId ||
+            "Guest user"}
+        </s-heading>
+        <s-text tone="neutral">
+          {customer.isApproved ? "Approved" : "Blocked"} ·{" "}
+          {customer.generations.length} images
+        </s-text>
         <Form method="post">
           <input type="hidden" name="id" value={customer.id} />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "end" }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 12,
+              alignItems: "end",
+            }}
+          >
             <label style={{ display: "grid", gap: 6 }}>
               <span>Generation limit</span>
               <input
@@ -161,10 +208,20 @@ function CustomerDetail({ customer }: { customer: CustomerDetailData }) {
                 style={{ width: 180, padding: "8px 10px" }}
               />
             </label>
-            <button type="submit" name="intent" value="customer:approve" style={{ padding: "8px 10px" }}>
+            <button
+              type="submit"
+              name="intent"
+              value="customer:approve"
+              style={{ padding: "8px 10px" }}
+            >
               Save
             </button>
-            <button type="submit" name="intent" value="customer:block" style={{ padding: "8px 10px" }}>
+            <button
+              type="submit"
+              name="intent"
+              value="customer:block"
+              style={{ padding: "8px 10px" }}
+            >
               Block
             </button>
           </div>
@@ -184,31 +241,83 @@ function CustomerDetail({ customer }: { customer: CustomerDetailData }) {
                 <tr key={image.id} style={{ borderBottom: "1px solid #eee" }}>
                   <td style={{ padding: 8, width: 64 }}>
                     {image.imageUrl ? (
-                      <img src={image.imageUrl} alt={displayPrompt(image.metadata, image.prompt)} style={{ width: 48, aspectRatio: "1", objectFit: "cover", borderRadius: 6 }} />
+                      <img
+                        src={image.imageUrl}
+                        alt={displayPrompt(image.metadata, image.prompt)}
+                        style={{
+                          width: 48,
+                          aspectRatio: "1",
+                          objectFit: "cover",
+                          borderRadius: 6,
+                        }}
+                      />
                     ) : null}
                   </td>
                   <td style={{ padding: 8 }}>
-                    <s-text>{displayPrompt(image.metadata, image.prompt)}</s-text>
-                    <s-text tone="neutral">{selectedOptionsSummary(image.metadata) || "No options"}</s-text>
+                    <s-text>
+                      {displayPrompt(image.metadata, image.prompt)}
+                    </s-text>
+                    <s-text tone="neutral">
+                      {selectedOptionsSummary(image.metadata) || "No options"}
+                    </s-text>
                   </td>
-                  <td style={{ padding: 8 }}>{image.status} · {image.visibility} · {image.moderationStatus}</td>
-                          <td style={{ padding: 8 }}>
-                        <Form method="post">
-                          <input type="hidden" name="id" value={image.id} />
-                          <s-stack direction="inline" gap="small">
-                            {image.visibility === "PUBLIC" && image.moderationStatus === "PENDING" ? (
-                              <>
-                                <button type="submit" name="intent" value="image:approve" style={{ padding: "6px 8px" }}>Approve</button>
-                                <button type="submit" name="intent" value="image:reject" style={{ padding: "6px 8px" }}>Reject</button>
-                              </>
-                            ) : image.visibility === "PUBLIC" ? (
-                              <button type="submit" name="intent" value="image:reject" style={{ padding: "6px 8px" }}>Reject</button>
-                            ) : null}
-                            <button type="submit" name="intent" value="image:private" style={{ padding: "6px 8px" }}>Private</button>
-                            <button type="submit" name="intent" value="image:delete" style={{ padding: "6px 8px" }}>Delete</button>
-                          </s-stack>
-                        </Form>
-                          </td>
+                  <td style={{ padding: 8 }}>
+                    {image.status} · {image.visibility} ·{" "}
+                    {image.moderationStatus}
+                  </td>
+                  <td style={{ padding: 8 }}>
+                    <Form method="post">
+                      <input type="hidden" name="id" value={image.id} />
+                      <s-stack direction="inline" gap="small">
+                        {image.visibility === "PUBLIC" &&
+                        image.moderationStatus === "PENDING" ? (
+                          <>
+                            <button
+                              type="submit"
+                              name="intent"
+                              value="image:approve"
+                              style={{ padding: "6px 8px" }}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="submit"
+                              name="intent"
+                              value="image:reject"
+                              style={{ padding: "6px 8px" }}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : image.visibility === "PUBLIC" ? (
+                          <button
+                            type="submit"
+                            name="intent"
+                            value="image:reject"
+                            style={{ padding: "6px 8px" }}
+                          >
+                            Reject
+                          </button>
+                        ) : null}
+                        <button
+                          type="submit"
+                          name="intent"
+                          value="image:private"
+                          style={{ padding: "6px 8px" }}
+                        >
+                          Private
+                        </button>
+                        <button
+                          type="submit"
+                          name="intent"
+                          value="image:delete"
+                          style={{ padding: "6px 8px" }}
+                        >
+                          Delete
+                        </button>
+                      </s-stack>
+                    </Form>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -239,6 +348,8 @@ function selectedOptionsSummary(metadata: string | null) {
 
   return parsed.selectedOptions
     .filter((option: MetadataOption) => option.name && option.value)
-    .map((option: Required<MetadataOption>) => `${option.name}: ${option.value}`)
+    .map(
+      (option: Required<MetadataOption>) => `${option.name}: ${option.value}`,
+    )
     .join(", ");
 }

@@ -83,6 +83,7 @@ export async function action({ request }) {
     const customerLimit = customer?.generationLimit;
     if (customer && Number.isInteger(customerLimit)) {
       const gens = await getAiImageGenerations(adminClient, {
+        shopId: shop.id,
         customerId: customer.id,
       });
       const used = gens.length;
@@ -112,6 +113,7 @@ export async function action({ request }) {
       const moderation = await moderatePrompt(studioPrompt);
       if (!moderation.allowed) {
         const blocked = await createAiImageGeneration(adminClient, {
+          shopId: shop.id,
           prompt: studioPrompt,
           status: "BLOCKED",
           visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
@@ -152,6 +154,7 @@ export async function action({ request }) {
     }
 
     const saved = await createAiImageGeneration(adminClient, {
+      shopId: shop.id,
       prompt: studioPrompt,
       imageUrl: permanentImageUrl,
       status: "COMPLETED",
