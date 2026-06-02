@@ -313,7 +313,8 @@ export async function saveGeneratedImageToPublicUrl({
   const extension =
     contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "png";
   const crypto = await import("node:crypto");
-  const filename = `ai-generated-${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const token = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
+  const filename = `ai-${Date.now()}-${token}.${extension}`;
   const fs = await import("node:fs/promises");
   const path = await import("node:path");
   const uploadDir = path.join(process.cwd(), "public", "ai-generated");

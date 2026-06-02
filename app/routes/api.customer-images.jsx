@@ -2,10 +2,12 @@ import { unauthenticated } from "../shopify.server";
 import { getOrCreateCustomer, getOrCreateShop } from "../services/shops.server";
 import { corsJson, optionsResponse } from "../services/cors.server";
 import {
+  createAiImageGeneration,
   getAiImageGenerations,
   getAiImageGeneration,
   updateAiImageGeneration,
 } from "../services/metaobjects.server";
+import { saveGeneratedImageToPublicUrl } from "../services/shopify-media.server";
 
 export async function loader({ request }) {
   const url = new URL(request.url);
@@ -61,14 +63,18 @@ export async function action({ request }) {
   const {
     shop: shopDomain,
     generationId,
+    generation,
     customerId,
     customerEmail,
     intent = "select-cart",
   } = body;
 
-  if (!shopDomain || !generationId) {
+  if (!shopDomain || (!generationId && !generation)) {
     return corsJson(
-      { success: false, error: "shop and generationId are required" },
+      {
+        success: false,
+        error: "shop and generationId or generation are required",
+      },
       { status: 400 },
     );
   }
@@ -82,6 +88,18 @@ export async function action({ request }) {
       shopifyCustomerId: customerId,
       email: customerEmail,
     });
+
+    if (!generationId && intent === "select-cart") {
+      const image = await persistPreviewGeneration({
+        admin,
+        shopId: shop.id,
+        generation,
+        customerId: customer?.id || customerId,
+        customerEmail,
+      });
+
+      return corsJson({ success: true, image });
+    }
 
     const image = await getAiImageGeneration(admin, generationId);
     if (!image) {
@@ -103,4 +121,57 @@ export async function action({ request }) {
     console.error("api.customer-images action error", err);
     return corsJson({ success: false, error: err.message }, { status: 500 });
   }
+}
+
+async function persistPreviewGeneration({
+  admin,
+  shopId,
+  generation,
+  customerId,
+  customerEmail,
+}) {
+  if (!generation || typeof generation !== "object") {
+    throw new Error("Generated preview data is required.");
+  }
+
+  const pendingImage = generation.pendingImage || {};
+  const publicBaseUrl =
+    process.env.APP_PUBLIC_URL ||
+    process.env.SHOPIFY_APP_URL ||
+    process.env.HOST ||
+    "https://shopify-ai.deploymeta.com";
+  const imageUrl =
+    pendingImage.imageUrl && !String(pendingImage.imageUrl).startsWith("data:")
+      ? pendingImage.imageUrl
+      : await saveGeneratedImageToPublicUrl({
+          imageUrl: pendingImage.imageUrl,
+          base64Data: pendingImage.base64Data,
+          mimeType: pendingImage.mimeType,
+          publicBaseUrl,
+        });
+
+  if (!imageUrl || String(imageUrl).startsWith("data:")) {
+    throw new Error(
+      "Generated image could not be saved to a public image URL.",
+    );
+  }
+
+  return createAiImageGeneration(admin, {
+    shopId,
+    prompt: generation.prompt,
+    status: "COMPLETED",
+    visibility: generation.visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
+    moderationStatus:
+      generation.visibility === "PUBLIC" ? "PENDING" : "APPROVED",
+    imageUrl,
+    productId: generation.productId,
+    productHandle: generation.productHandle,
+    variantId: generation.variantId,
+    variantTitle: generation.variantTitle,
+    customerId,
+    customerEmail,
+    openAiRequestId: generation.openAiRequestId,
+    selectedForCart: true,
+    metadata: generation.metadata,
+  });
 }

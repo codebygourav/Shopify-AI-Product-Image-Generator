@@ -1,10 +1,17 @@
 import { unauthenticated } from "../shopify.server";
-import { getOrCreateShop, parseShopSettings } from "../services/shops.server";
+import {
+  defaultShopSettings,
+  getOrCreateShop,
+  parseShopSettings,
+} from "../services/shops.server";
 import { corsJson, optionsResponse } from "../services/cors.server";
 
 export async function action({ request }) {
   if (request.method === "OPTIONS") return optionsResponse();
-  return corsJson({ success: false, error: "Method not allowed" }, { status: 405 });
+  return corsJson(
+    { success: false, error: "Method not allowed" },
+    { status: 405 },
+  );
 }
 
 export async function loader({ request }) {
@@ -12,7 +19,10 @@ export async function loader({ request }) {
   const shopDomain = url.searchParams.get("shop");
 
   if (!shopDomain) {
-    return corsJson({ success: false, error: "shop is required" }, { status: 400 });
+    return corsJson(
+      { success: false, error: "shop is required" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -25,7 +35,18 @@ export async function loader({ request }) {
       studioProduct: settings.studioProduct,
     });
   } catch (err) {
+    if (isMissingShopifySessionError(err)) {
+      return corsJson({
+        success: true,
+        studioProduct: defaultShopSettings().studioProduct,
+      });
+    }
+
     console.error("api.studio-config error", err);
     return corsJson({ success: false, error: err.message }, { status: 500 });
   }
+}
+
+function isMissingShopifySessionError(error) {
+  return String(error?.message || error).includes("Could not find a session");
 }

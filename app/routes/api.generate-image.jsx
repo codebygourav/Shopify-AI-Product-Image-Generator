@@ -2,17 +2,14 @@ import { authenticate, unauthenticated } from "../shopify.server";
 import { generateAiImage } from "../services/openai-images.server";
 import { moderatePrompt } from "../services/moderation.server";
 import {
+  defaultShopSettings,
   getOrCreateCustomer,
   getOrCreateShop,
   parseShopSettings,
 } from "../services/shops.server";
 import { corsJson, optionsResponse } from "../services/cors.server";
 import { isLiveGeneration } from "../services/generation-mode.server";
-import {
-  createAiImageGeneration,
-  getAiImageGenerations,
-  updateCustomerProfile,
-} from "../services/metaobjects.server";
+import { getAiImageGenerations } from "../services/metaobjects.server";
 import { saveGeneratedImageToPublicUrl } from "../services/shopify-media.server";
 
 export async function loader() {
@@ -35,6 +32,7 @@ export async function action({ request }) {
       customerId,
       customerEmail,
       visibility = "PRIVATE",
+      apiBase,
       shop: shopFromBody,
     } = body;
 
@@ -57,27 +55,55 @@ export async function action({ request }) {
       adminClient = auth.admin;
     } catch {
       if (shopFromBody) {
-        const auth = await unauthenticated.admin(shopFromBody);
-        shopDomain = shopFromBody;
-        adminClient = auth.admin;
+        try {
+          const auth = await unauthenticated.admin(shopFromBody);
+          shopDomain = shopFromBody;
+          adminClient = auth.admin;
+        } catch (error) {
+          if (!isMissingShopifySessionError(error)) {
+            throw error;
+          }
+          shopDomain = shopFromBody;
+          adminClient = null;
+        }
       }
     }
 
-    if (!shopDomain || !adminClient) {
+    if (!shopDomain) {
       return corsJson({
         success: false,
-        error: "Shop domain and admin authentication are required.",
+        error: "Shop domain is required.",
       });
     }
 
-    const shop = await getOrCreateShop(adminClient, shopDomain);
+    const shop = adminClient
+      ? await getOrCreateShop(adminClient, shopDomain)
+      : {
+          id: shopDomain,
+          shop: shopDomain,
+          settings: JSON.stringify(defaultShopSettings()),
+        };
     const settings = parseShopSettings(shop.settings);
-    const customer = await getOrCreateCustomer({
-      admin: adminClient,
-      shopId: shop.id,
-      shopifyCustomerId: customerId,
-      email: customerEmail,
-    });
+    const customer = adminClient
+      ? await getOrCreateCustomer({
+          admin: adminClient,
+          shopId: shop.id,
+          shopifyCustomerId: customerId,
+          email: customerEmail,
+        })
+      : customerId
+        ? {
+            id: customerId,
+            shopId: shop.id,
+            shopifyCustomerId: customerId,
+            email: customerEmail || null,
+            displayName: customerEmail
+              ? customerEmail.split("@")[0]
+              : "Customer",
+            isApproved: true,
+            generationLimit: null,
+          }
+        : null;
 
     if (customer?.isApproved === false) {
       return corsJson({
@@ -118,25 +144,9 @@ export async function action({ request }) {
     if (isLiveGeneration()) {
       const moderation = await moderatePrompt(studioPrompt);
       if (!moderation.allowed) {
-        const blocked = await createAiImageGeneration(adminClient, {
-          shopId: shop.id,
-          prompt: studioPrompt,
-          status: "BLOCKED",
-          visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
-          moderationStatus: "REJECTED",
-          moderationReason: moderation.reason,
-          productId,
-          productHandle,
-          variantId,
-          variantTitle,
-          customerId: customer?.id,
-          customerEmail,
-        });
-
         return corsJson({
           success: false,
           error: moderation.reason,
-          generation: blocked,
         });
       }
     }
@@ -150,34 +160,32 @@ export async function action({ request }) {
       process.env.SHOPIFY_APP_URL ||
       process.env.HOST ||
       "https://shopify-ai.deploymeta.com";
-
-    // Save generated image as a real file so the DB/storefront only receives a public URL.
-    const permanentImageUrl = await saveGeneratedImageToPublicUrl({
+    const previewImage = await saveGeneratedImageToPublicUrl({
       imageUrl: image.imageUrl,
       base64Data: image.base64Data,
       mimeType: image.mimeType,
       publicBaseUrl,
     });
 
-    if (!permanentImageUrl || permanentImageUrl.startsWith("data:")) {
+    if (!previewImage || previewImage.startsWith("data:")) {
       throw new Error(
-        "Generated image could not be converted to a public image URL.",
+        "Generated image could not be converted to a preview image URL.",
       );
     }
+    const storefrontPreviewImage = storefrontImageUrl(previewImage, apiBase);
 
-    const saved = await createAiImageGeneration(adminClient, {
-      shopId: shop.id,
+    const pendingGeneration = {
       prompt: studioPrompt,
-      imageUrl: permanentImageUrl,
-      status: "COMPLETED",
+      status: "PREVIEW",
       visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
       moderationStatus: visibility === "PUBLIC" ? "PENDING" : "APPROVED",
       productId,
       productHandle,
       variantId,
       variantTitle,
-      customerId: customer?.id,
+      customerId: customer?.id || customerId || null,
       customerEmail,
+      imageUrl: storefrontPreviewImage,
       openAiRequestId: image.requestId,
       metadata: JSON.stringify({
         productHandle,
@@ -187,23 +195,11 @@ export async function action({ request }) {
         originalPrompt: originalPrompt || prompt.trim(),
         generationMode: image.mode,
       }),
-    });
-
-    if (customer?.id) {
-      try {
-        const profile = await getOrCreateCustomer({
-          admin: adminClient,
-          shopId: shop.id,
-          shopifyCustomerId: customer.id,
-          email: customerEmail,
-        });
-        await updateCustomerProfile(adminClient, customer.id, {
-          totalGenerations: (profile.totalGenerations || 0) + 1,
-        });
-      } catch (profileError) {
-        console.warn("Customer profile update failed", profileError);
-      }
-    }
+      pendingImage: {
+        imageUrl: storefrontPreviewImage,
+        mimeType: image.mimeType,
+      },
+    };
 
     console.log("OpenAI Usage Log (Local Node Server logs):", {
       model: image.model,
@@ -214,8 +210,8 @@ export async function action({ request }) {
 
     return corsJson({
       success: true,
-      generation: saved,
-      image: saved.imageUrl,
+      generation: pendingGeneration,
+      image: storefrontPreviewImage,
       mode: image.mode,
     });
   } catch (error) {
@@ -234,4 +230,30 @@ export async function action({ request }) {
       error: error.message,
     });
   }
+}
+
+function isMissingShopifySessionError(error) {
+  return String(error?.message || error).includes("Could not find a session");
+}
+
+function storefrontImageUrl(imageUrl, apiBase) {
+  const filename = String(imageUrl || "").match(
+    /\/ai-generated\/([^/?#]+\.(?:png|jpe?g))/i,
+  )?.[1];
+  if (!filename) return imageUrl;
+
+  const base = String(apiBase || "/apps/ai-image")
+    .trim()
+    .replace(/\/$/, "");
+  if (!base || /^https?:\/\/localhost(?::|\/|$)/i.test(base)) {
+    return `/apps/ai-image/ai-generated/${filename}`;
+  }
+
+  if (/^https?:\/\//i.test(base)) {
+    const url = new URL(base);
+    const pathname = url.pathname.replace(/\/api\/?$/i, "");
+    return `${url.origin}${pathname}/ai-generated/${filename}`;
+  }
+
+  return `${base}/ai-generated/${filename}`;
 }
