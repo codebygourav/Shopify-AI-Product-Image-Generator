@@ -22,6 +22,7 @@ services:
       - OPENAI_MODERATION_MODEL=${OPENAI_MODERATION_MODEL:-omni-moderation-latest}
       - IMAGE_GENERATION_MODE=${IMAGE_GENERATION_MODE:-live}
       - SHOPIFY_APP_URL=${APP_URL}
+      - APP_PUBLIC_URL=${APP_PUBLIC_URL:-${APP_URL}}
       - SCOPES=${SCOPES}
     depends_on:
       db:
