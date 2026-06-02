@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      cache_from:
+        - shopify-ai-product-image-generator-web:latest
     container_name: shopify-ai-app
     restart: always
     ports:

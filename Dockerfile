@@ -1,17 +1,21 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:20-alpine AS build
 RUN apk add --no-cache openssl
 
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+  npm ci --prefer-offline --no-audit --fund=false
 
 COPY prisma ./prisma
 RUN npx prisma generate
 
 COPY . .
 RUN npm run build
-RUN npm prune --omit=dev && npm cache clean --force
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+  npm prune --omit=dev --no-audit --fund=false
 
 FROM node:20-alpine AS runner
 RUN apk add --no-cache openssl
