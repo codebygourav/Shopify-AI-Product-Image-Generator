@@ -1,3 +1,13 @@
 .cache
+.git
+.react-router
+.shopify
+.vscode
 build
 node_modules
+public/ai-generated
+.env
+.env.*
+error_debug.log
+*.log
+npm-debug.log*
