@@ -9,6 +9,7 @@ import {
   updateAiImageGeneration,
   deleteAiImageGeneration,
 } from "../services/metaobjects.server";
+import { adminImageUrl } from "../services/image-urls.server";
 
 type MetadataOption = { name?: string; value?: string };
 type CustomerImage = {
@@ -51,7 +52,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       ).filter((image) => image !== null) as CustomerImage[];
       selectedCustomer = {
         ...activeCust,
-        generations,
+        generations: generations.map(withAdminImageUrl),
       };
     }
   }
@@ -352,4 +353,11 @@ function selectedOptionsSummary(metadata: string | null) {
       (option: Required<MetadataOption>) => `${option.name}: ${option.value}`,
     )
     .join(", ");
+}
+
+function withAdminImageUrl(image: CustomerImage): CustomerImage {
+  return {
+    ...image,
+    imageUrl: adminImageUrl(image.imageUrl),
+  };
 }

@@ -296,16 +296,6 @@
       selectedImage.variantTitle || variant.title,
     );
 
-    if (form) {
-      applyCartPropertiesToForm(form, properties);
-      if (typeof form.requestSubmit === "function") {
-        form.requestSubmit();
-      } else {
-        form.submit();
-      }
-      return;
-    }
-
     if (!variantId) {
       throw new Error(
         "Configure a Shopify checkout variant ID for this custom page.",
@@ -333,6 +323,8 @@
           "Could not add generated image to cart.",
       );
     }
+
+    applyCartPropertiesToForm(form, properties);
   }
 
   document
@@ -364,19 +356,7 @@
       renderPromptTools(promptTools, studioConfig.promptTemplates || []);
       prefillPromptFromUrl(textarea);
       prefillOptionsFromUrl(root);
-      restoreStoredPreview({
-        root,
-        preview,
-        selectButton,
-        previewToggle,
-        productPreviewHtml,
-        setSelectedImage(image) {
-          selectedImage = image;
-        },
-        setGeneratedPreviewHtml(html) {
-          generatedPreviewHtml = html;
-        },
-      });
+      clearStoredPreview(root);
 
       promptTools?.addEventListener("click", (event) => {
         const template = event.target.closest("[data-ai-template]");
@@ -556,7 +536,7 @@
             form,
             selectedImage,
           });
-          if (!form) window.location.href = "/cart";
+          window.location.href = "/cart";
         } catch (error) {
           status.textContent = error.message;
           addToCartButton.disabled = false;
@@ -969,6 +949,14 @@
         previewStorageKey(root),
         JSON.stringify(previewData),
       );
+    } catch {
+      // Preview storage is an enhancement only.
+    }
+  }
+
+  function clearStoredPreview(root) {
+    try {
+      window.sessionStorage?.removeItem(previewStorageKey(root));
     } catch {
       // Preview storage is an enhancement only.
     }

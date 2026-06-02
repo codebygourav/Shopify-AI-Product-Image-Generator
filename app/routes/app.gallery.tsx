@@ -8,6 +8,7 @@ import {
   updateAiImageGeneration,
   deleteAiImageGeneration,
 } from "../services/metaobjects.server";
+import { adminImageUrl } from "../services/image-urls.server";
 
 type MediaImage = {
   id: string;
@@ -31,9 +32,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     getAiImageGenerations(admin, { shopId: shop.id }),
     selectedImageId ? getAiImageGeneration(admin, selectedImageId) : null,
   ]);
-  const images = rawImages.filter((image) => image !== null) as MediaImage[];
+  const images = (
+    rawImages.filter((image) => image !== null) as MediaImage[]
+  ).map(withAdminImageUrl);
 
-  return { images, selectedImage };
+  return {
+    images,
+    selectedImage: selectedImage
+      ? withAdminImageUrl(selectedImage as MediaImage)
+      : null,
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -276,4 +284,11 @@ function selectedOptionsSummary(metadata: string | null) {
         `${option.name}: ${option.value}`,
     )
     .join(", ");
+}
+
+function withAdminImageUrl(image: MediaImage): MediaImage {
+  return {
+    ...image,
+    imageUrl: adminImageUrl(image.imageUrl),
+  };
 }

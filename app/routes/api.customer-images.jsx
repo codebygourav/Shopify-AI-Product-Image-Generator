@@ -8,6 +8,7 @@ import {
   updateAiImageGeneration,
 } from "../services/metaobjects.server";
 import { saveGeneratedImageToPublicUrl } from "../services/shopify-media.server";
+import { adminImageUrl } from "../services/image-urls.server";
 
 export async function loader({ request }) {
   const url = new URL(request.url);
@@ -172,7 +173,7 @@ async function persistPreviewGeneration({
     process.env.SHOPIFY_APP_URL ||
     process.env.HOST ||
     "https://shopify-ai.deploymeta.com";
-  const imageUrl =
+  const imageUrl = adminImageUrl(
     pendingImage.imageUrl && !String(pendingImage.imageUrl).startsWith("data:")
       ? pendingImage.imageUrl
       : await saveGeneratedImageToPublicUrl({
@@ -180,7 +181,8 @@ async function persistPreviewGeneration({
           base64Data: pendingImage.base64Data,
           mimeType: pendingImage.mimeType,
           publicBaseUrl,
-        });
+        }),
+  );
 
   if (!imageUrl || String(imageUrl).startsWith("data:")) {
     throw new Error(

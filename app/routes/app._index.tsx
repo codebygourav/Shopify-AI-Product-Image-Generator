@@ -3,6 +3,7 @@ import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import { getOrCreateShop } from "../services/shops.server";
 import { getAiImageGenerations } from "../services/metaobjects.server";
+import { adminImageUrl } from "../services/image-urls.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -21,7 +22,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const pendingModeration = allGenerations.filter(
     (gen) => gen.moderationStatus === "PENDING",
   ).length;
-  const recent = allGenerations.slice(0, 6);
+  const recent = allGenerations.slice(0, 6).map((item) => ({
+    ...item,
+    imageUrl: adminImageUrl(item.imageUrl),
+  }));
 
   return { shop: session.shop, total, publicCount, pendingModeration, recent };
 };
