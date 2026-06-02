@@ -24,13 +24,10 @@ export async function loader({ request }) {
   }
 
   try {
-    const { admin } = await unauthenticated.admin(shopDomain);
-    const shop = await getOrCreateShop(admin, shopDomain);
-    const customer = await getOrCreateCustomer({
-      admin,
-      shopId: shop.id,
-      shopifyCustomerId: customerId,
-      email: customerEmail,
+    const { admin, shop, customer } = await resolveShopContext({
+      shopDomain,
+      customerId,
+      customerEmail,
     });
 
     if (!customer) {
@@ -80,13 +77,10 @@ export async function action({ request }) {
   }
 
   try {
-    const { admin } = await unauthenticated.admin(shopDomain);
-    const shop = await getOrCreateShop(admin, shopDomain);
-    const customer = await getOrCreateCustomer({
-      admin,
-      shopId: shop.id,
-      shopifyCustomerId: customerId,
-      email: customerEmail,
+    const { admin, shop, customer } = await resolveShopContext({
+      shopDomain,
+      customerId,
+      customerEmail,
     });
 
     if (!generationId && intent === "select-cart") {
@@ -120,6 +114,44 @@ export async function action({ request }) {
   } catch (err) {
     console.error("api.customer-images action error", err);
     return corsJson({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+async function resolveShopContext({ shopDomain, customerId, customerEmail }) {
+  try {
+    const { admin } = await unauthenticated.admin(shopDomain);
+    const shop = await getOrCreateShop(admin, shopDomain);
+    const customer = await getOrCreateCustomer({
+      admin,
+      shopId: shop.id,
+      shopifyCustomerId: customerId,
+      email: customerEmail,
+    });
+
+    return { admin, shop, customer };
+  } catch (error) {
+    if (!isMissingShopifySessionError(error)) {
+      throw error;
+    }
+
+    return {
+      admin: null,
+      shop: {
+        id: shopDomain,
+        shop: shopDomain,
+      },
+      customer: customerId
+        ? {
+            id: customerId,
+            shopId: shopDomain,
+            shopifyCustomerId: customerId,
+            email: customerEmail || null,
+            displayName: customerEmail
+              ? customerEmail.split("@")[0]
+              : "Customer",
+          }
+        : null,
+    };
   }
 }
 
@@ -174,4 +206,14 @@ async function persistPreviewGeneration({
     selectedForCart: true,
     metadata: generation.metadata,
   });
+}
+
+function isMissingShopifySessionError(error) {
+  const message = String(error?.message || error);
+  return (
+    message.includes("Could not find a session") ||
+    message.includes("No session found") ||
+    message.includes("MissingSessionTableError") ||
+    message.includes("session table does not exist")
+  );
 }
