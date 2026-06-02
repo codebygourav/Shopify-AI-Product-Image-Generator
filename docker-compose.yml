@@ -34,8 +34,6 @@ services:
     image: mysql:8.0
     container_name: shopify-ai-db
     restart: always
-    ports:
-      - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       - MYSQL_DATABASE=${MYSQL_DB:-ai_image_manager}
