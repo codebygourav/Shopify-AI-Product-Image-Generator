@@ -13,6 +13,7 @@ const openai = new OpenAI({
 
 const DEFAULT_IMAGE_SIZE = "1024x1024";
 const IMAGE_SIZES = new Set(["1024x1024", "1024x1536", "1536x1024", "auto"]);
+const IMAGE_QUALITIES = new Set(["low", "medium", "high", "auto"]);
 
 export async function generateAiImage(prompt, options = {}) {
   const images = await generateAiImages(prompt, { ...options, count: 1 });
@@ -51,7 +52,7 @@ export async function generateAiImages(prompt, options = {}) {
   const size = IMAGE_SIZES.has(options.size)
     ? options.size
     : DEFAULT_IMAGE_SIZE;
-  const quality = options.quality || "low";
+  const quality = normalizeImageQuality(options.quality);
   const watermarkText = options.watermarkText || "Orvella";
   const outputFormat = options.outputFormat || "jpeg";
   const outputCompression = options.outputCompression || 72;
@@ -109,6 +110,14 @@ function clampImageCount(count) {
   const numericCount = Number(count);
   if (!Number.isFinite(numericCount)) return 1;
   return Math.max(1, Math.min(2, Math.floor(numericCount)));
+}
+
+function normalizeImageQuality(quality) {
+  const normalized = String(quality || "low")
+    .trim()
+    .toLowerCase();
+  if (normalized === "standard") return "medium";
+  return IMAGE_QUALITIES.has(normalized) ? normalized : "low";
 }
 
 function withWatermark(prompt, watermarkText) {

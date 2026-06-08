@@ -6,6 +6,8 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
+COPY extensions/ai-checkout-image/package.json extensions/ai-checkout-image/package-lock.json* ./extensions/ai-checkout-image/
+COPY extensions/ai-customer-account-image/package.json extensions/ai-customer-account-image/package-lock.json* ./extensions/ai-customer-account-image/
 RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
   npm ci --prefer-offline --no-audit --fund=false
 
