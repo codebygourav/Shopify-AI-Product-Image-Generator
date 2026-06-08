@@ -12,7 +12,9 @@ node_modules
 /prisma/dev.sqlite
 /prisma/dev.sqlite-journal
 database.sqlite
-
+public/ai-generated
+/public/ai-generated*
+/public/ai-generated*
 .env
 .env.*
 

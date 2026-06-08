@@ -1,4 +1,5 @@
 {{ 'ai-image-manager.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
 
 {% assign has_ai_images = false %}
 {% for item in cart.items %}
@@ -9,36 +10,58 @@
 
 {% if has_ai_images %}
   <section class="aim-cart-preview">
-    <h2 class="aim-heading">{{ block.settings.heading }}</h2>
-    <p class="aim-copy">{{ block.settings.description }}</p>
+    <div class="aim-section-head">
+      <div>
+        <p class="aim-eyebrow">Your artwork</p>
+        <h2 class="aim-heading">{{ block.settings.heading }}</h2>
+        <p class="aim-copy">{{ block.settings.description }}</p>
+      </div>
+    </div>
     <div class="aim-cart-preview__grid">
       {% for item in cart.items %}
-        {% assign ai_image = item.properties['_AI Image URL'] %}
+        {% assign ai_image = item.properties['AI Image Preview'] | default: item.properties['_AI Image URL'] %}
         {% if ai_image != blank %}
-          <article class="aim-cart-preview__item">
-            <img
-              src="{{ ai_image }}"
-              alt="Generated image for {{ item.product.title | escape }}"
-              width="140"
-              height="140"
-              loading="lazy"
-            >
+          {% assign final_selections = item.properties['_AI Final Selections'] | default: item.properties['_AI Final Options'] %}
+          <article
+            class="aim-cart-preview__item"
+            {% if final_selections != blank %}data-ai-final-selections="{{ final_selections | escape }}"{% endif %}
+          >
+            <div class="aim-cart-preview__thumb">
+              <img
+                src="{{ ai_image }}"
+                alt="Generated image for {{ item.product.title | escape }}"
+                width="160"
+                height="160"
+                loading="lazy"
+              >
+            </div>
             <div>
               <h3>{{ item.product.title }}</h3>
               {% if item.properties['_AI Product Variant'] != blank %}
                 <p>{{ item.properties['_AI Product Variant'] }}</p>
               {% endif %}
-              {% if item.properties['_AI Custom Options'] != blank %}
-                <p>{{ item.properties['_AI Custom Options'] }}</p>
-              {% elsif item.properties['AI Options'] != blank %}
-                <p>{{ item.properties['AI Options'] }}</p>
+              <div class="aim-cart-preview__options">
+                {% if item.properties['_AI Custom Options'] != blank %}
+                  <div><span>Options</span> <strong>{{ item.properties['_AI Custom Options'] }}</strong></div>
+                {% elsif item.properties['AI Options'] != blank %}
+                  <div><span>Options</span> <strong>{{ item.properties['AI Options'] }}</strong></div>
+                {% endif %}
+                {% if item.properties['_AI Final Selections'] != blank or item.properties['_AI Final Options'] != blank %}
+                  <div><span>Frame & effect</span> <strong>Applied in preview</strong></div>
+                {% endif %}
+              </div>
+              {% assign redesign_prompt = item.properties['AI Prompt'] | default: item.properties['_AI Prompt'] %}
+              {% if redesign_prompt != blank %}
+                <p class="aim-cart-preview__prompt">{{ redesign_prompt | truncate: 140 }}</p>
               {% endif %}
-              {% if item.properties['AI Prompt'] != blank %}
-                <p><strong>Prompt:</strong> {{ item.properties['AI Prompt'] }}</p>
-              {% elsif item.properties['_AI Prompt'] != blank %}
-                <p><strong>Prompt:</strong> {{ item.properties['_AI Prompt'] }}</p>
-              {% endif %}
-              <small>Generated image selected for checkout</small>
+              {% assign redesign_generation = item.properties['_AI Generation ID'] %}
+              <a
+                class="aim-cart-redesign"
+                href="/pages/custom-configurator?prompt={{ redesign_prompt | url_encode }}{% if redesign_generation != blank %}&referenceGeneration={{ redesign_generation | url_encode }}{% endif %}"
+              >
+                Edit artwork
+              </a>
+              <small>Final preview shown — same image used at checkout</small>
             </div>
           </article>
         {% endif %}
@@ -56,13 +79,13 @@
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Generated image preview"
+      "default": "Your generated artwork"
     },
     {
       "type": "textarea",
       "id": "description",
       "label": "Description",
-      "default": "Review your generated artwork before checkout."
+      "default": "Review your framed preview before checkout. Size, frame, and effect match your final order."
     }
   ]
 }

@@ -18,6 +18,7 @@ type MediaImage = {
   status: string;
   visibility: string;
   moderationStatus: string;
+  selectedForCart?: boolean;
   createdAt: string | Date;
   customer?: { email?: string | null; displayName?: string | null } | null;
 };
@@ -33,7 +34,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     selectedImageId ? getAiImageGeneration(admin, selectedImageId) : null,
   ]);
   const images = (
-    rawImages.filter((image) => image !== null) as MediaImage[]
+    rawImages.filter((image) => image !== null && isFinalized(image)) as MediaImage[]
   ).map(withAdminImageUrl);
 
   return {
@@ -72,188 +73,215 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function MediaLibrary() {
   const { images, selectedImage } = useLoaderData<typeof loader>();
 
+  if (selectedImage) {
+    return (
+      <s-page heading="Media Library">
+        <ImageDetail image={selectedImage} />
+      </s-page>
+    );
+  }
+
   return (
     <s-page heading="Media Library">
-      <s-section heading="Generated image media">
-        {selectedImage ? <ImageDetail image={selectedImage} /> : null}
-        <MediaTable images={images} />
+      <s-section heading="Generated AI Artworks">
+        {images.length === 0 ? (
+          <s-text tone="neutral">No generated images found.</s-text>
+        ) : (
+          <div className="aim-media-grid">
+            {images.map((image) => (
+              <Link
+                to={`/app/gallery?image=${image.id}`}
+                key={image.id}
+                style={{ textDecoration: "none" }}
+              >
+                <div className="aim-media-card">
+                  <div className="aim-media-card-img-wrapper">
+                    <img
+                      src={image.imageUrl || ""}
+                      alt={displayPrompt(image.metadata, image.prompt)}
+                    />
+                    <div className="aim-media-card-overlay">
+                      <span className="aim-media-card-overlay-btn">
+                        Inspect
+                      </span>
+                    </div>
+                  </div>
+                  <div className="aim-media-card-info">
+                    <div className="aim-media-card-prompt">
+                      {displayPrompt(image.metadata, image.prompt)}
+                    </div>
+                    <div className="aim-media-card-meta">
+                      <span>
+                        {image.customer?.email?.split("@")[0] || "Guest"}
+                      </span>
+                      <span
+                        className={`aim-badge ${
+                          image.moderationStatus === "APPROVED"
+                            ? "aim-badge--success"
+                            : image.moderationStatus === "REJECTED"
+                              ? "aim-badge--danger"
+                              : "aim-badge--warning"
+                        }`}
+                        style={{ fontSize: 10, padding: "2px 6px" }}
+                      >
+                        {image.moderationStatus}
+                      </span>
+                    </div>
+                  </div>
+                  </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </s-section>
     </s-page>
   );
 }
 
-function MediaTable({ images }: { images: MediaImage[] }) {
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 10 }}>Preview</th>
-            <th style={{ padding: 10 }}>Prompt</th>
-            <th style={{ padding: 10 }}>Customer</th>
-            <th style={{ padding: 10 }}>State</th>
-            <th style={{ padding: 10 }}>Created</th>
-            <th style={{ padding: 10 }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {images.map((image) => (
-            <tr key={image.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: 10, width: 76 }}>
-                {image.imageUrl ? (
-                  <img
-                    src={image.imageUrl}
-                    alt={displayPrompt(image.metadata, image.prompt)}
-                    style={{
-                      width: 56,
-                      aspectRatio: "1",
-                      objectFit: "cover",
-                      borderRadius: 6,
-                    }}
-                  />
-                ) : null}
-              </td>
-              <td style={{ padding: 10, maxWidth: 420 }}>
-                <details>
-                  <summary style={{ cursor: "pointer" }}>
-                    <div
-                      style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <s-text>
-                        {displayPrompt(image.metadata, image.prompt)}
-                      </s-text>
-                    </div>
-                    <div
-                      style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 1,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <s-text tone="neutral">
-                        {selectedOptionsSummary(image.metadata) || "No options"}
-                      </s-text>
-                    </div>
-                  </summary>
-                  <s-text>{displayPrompt(image.metadata, image.prompt)}</s-text>
-                  <s-text tone="neutral">
-                    {selectedOptionsSummary(image.metadata) || "No options"}
-                  </s-text>
-                </details>
-              </td>
-              <td style={{ padding: 10 }}>
-                {image.customer?.email ||
-                  image.customer?.displayName ||
-                  "Guest"}
-              </td>
-              <td style={{ padding: 10 }}>
-                {image.status} · {image.visibility} · {image.moderationStatus}
-              </td>
-              <td style={{ padding: 10 }}>
-                {new Date(image.createdAt).toLocaleDateString()}
-              </td>
-              <td style={{ padding: 10 }}>
-                <Link to={`/app/gallery?image=${image.id}`}>View details</Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function ImageDetail({ image }: { image: MediaImage }) {
   return (
-    <s-box padding="base" borderWidth="base" borderRadius="base">
-      <div
+    <div>
+      <Link
+        to="/app/gallery"
+        className="button-premium"
         style={{
-          display: "grid",
-          gridTemplateColumns: "180px 1fr",
-          gap: 18,
-          alignItems: "start",
+          display: "inline-flex",
+          marginBottom: 16,
+          textDecoration: "none",
         }}
       >
-        {image.imageUrl ? (
-          <img
-            src={image.imageUrl}
-            alt={displayPrompt(image.metadata, image.prompt)}
-            style={{
-              width: 180,
-              aspectRatio: "1",
-              objectFit: "cover",
-              borderRadius: 8,
-            }}
-          />
-        ) : null}
-        <s-stack direction="block" gap="small">
-          <s-heading>{displayPrompt(image.metadata, image.prompt)}</s-heading>
-          <s-text>
-            {selectedOptionsSummary(image.metadata) || "No options saved"}
-          </s-text>
-          <s-text tone="neutral">
-            {image.status} · {image.visibility} · {image.moderationStatus} ·{" "}
-            {image.customer?.email || "Guest"}
-          </s-text>
-          <Form method="post">
+        ← Back to gallery
+      </Link>
+      <s-section heading="Artwork inspection">
+        <div className="aim-details-container">
+          {image.imageUrl ? (
+            <div
+              style={{
+                position: "sticky",
+                top: 20,
+                borderRadius: 22,
+                overflow: "hidden",
+                border: "1px solid #e8ded0",
+                background: "linear-gradient(145deg, #f5eadc, #fff9ef)",
+                boxShadow: "0 18px 48px rgba(35,31,26,.10)",
+              }}
+            >
+              <img
+                src={image.imageUrl}
+                alt={displayPrompt(image.metadata, image.prompt)}
+                style={{
+                  width: "100%",
+                  aspectRatio: "1",
+                  objectFit: "contain",
+                  display: "block",
+                  padding: 18,
+                }}
+              />
+              <span
+                className={`aim-badge ${image.visibility === "PUBLIC" ? "aim-badge--info" : "aim-badge--success"}`}
+                style={{ position: "absolute", top: 14, right: 14 }}
+              >
+                {image.visibility}
+              </span>
+            </div>
+          ) : null}
+        <s-stack direction="block" gap="base">
+          
+          <s-stack direction="block" gap="small">
+            <label style={{ fontWeight: 600, fontSize: 11, color: '#6d7175', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Art Direction / Prompt</label>
+            <div style={{ background: '#f6f6f7', padding: 12, borderRadius: 6, fontSize: 13, border: '1px solid #e1e3e5', lineHeight: 1.5, wordBreak: 'break-word', maxHeight: 120, overflowY: 'auto' }}>
+              {displayPrompt(image.metadata, image.prompt)}
+            </div>
+          </s-stack>
+
+          <s-stack direction="block" gap="small">
+            <label style={{ fontWeight: 600, fontSize: 11, color: '#6d7175', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Selected Customize Options</label>
+            <span style={{ fontWeight: 500, fontSize: 13, display: 'block' }}>
+              {selectedOptionsSummary(image.metadata) || "No custom options selected"}
+            </span>
+          </s-stack>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13, borderTop: '1px solid #e1e3e5', paddingTop: 16 }}>
+            <div>
+              <span style={{ color: '#6d7175' }}>Creator:</span>
+              <div style={{ fontWeight: 600, marginTop: 2, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{image.customer?.email || "Guest"}</div>
+            </div>
+            <div>
+              <span style={{ color: '#6d7175' }}>Moderation:</span>
+              <div style={{ marginTop: 2 }}>
+                <span className={`aim-badge ${
+                  image.moderationStatus === 'APPROVED' ? 'aim-badge--success' :
+                  image.moderationStatus === 'REJECTED' ? 'aim-badge--danger' : 'aim-badge--warning'
+                }`}>
+                  {image.moderationStatus}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <Form method="post" style={{ marginTop: 16 }}>
             <input type="hidden" name="id" value={image.id} />
-            <s-stack direction="inline" gap="small">
+            <s-stack direction="block" gap="small">
               {image.visibility === "PUBLIC" ? (
-                <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, width: '100%' }}>
                   <button
                     type="submit"
                     name="intent"
                     value="image:approve"
-                    style={{ padding: "8px 10px" }}
+                    className="button-primary"
+                    style={{ width: '100%' }}
                   >
-                    Approve for community
+                    Approve
                   </button>
                   <button
                     type="submit"
                     name="intent"
                     value="image:reject"
-                    style={{ padding: "8px 10px" }}
+                    style={{ width: '100%' }}
                   >
-                    Reject community post
+                    Reject
                   </button>
-                </>
+                </div>
               ) : null}
-              <button
-                type="submit"
-                name="intent"
-                value="image:public"
-                style={{ padding: "8px 10px" }}
-              >
-                Publish to community
-              </button>
-              <button
-                type="submit"
-                name="intent"
-                value="image:private"
-                style={{ padding: "8px 10px" }}
-              >
-                Keep private
-              </button>
-              <button
-                type="submit"
-                name="intent"
-                value="image:delete"
-                style={{ padding: "8px 10px" }}
-              >
-                Delete
-              </button>
-              <s-link href="/app/gallery">Close details</s-link>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, width: '100%' }}>
+                {image.visibility === 'PRIVATE' ? (
+                  <button
+                    type="submit"
+                    name="intent"
+                    value="image:public"
+                    style={{ width: '100%' }}
+                  >
+                    Make Public
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    name="intent"
+                    value="image:private"
+                    style={{ width: '100%' }}
+                  >
+                    Make Private
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  name="intent"
+                  value="image:delete"
+                  style={{ width: '100%' }}
+                >
+                  Delete
+                </button>
+              </div>
+              <Link to="/app/gallery" style={{ textDecoration: 'none', textAlign: 'center', display: 'block', marginTop: 8, fontSize: 13, color: '#008060', fontWeight: 600 }}>
+                Close Inspector
+              </Link>
             </s-stack>
           </Form>
         </s-stack>
-      </div>
-    </s-box>
+        </div>
+      </s-section>
+    </div>
   );
 }
 
@@ -291,4 +319,18 @@ function withAdminImageUrl(image: MediaImage): MediaImage {
     ...image,
     imageUrl: adminImageUrl(image.imageUrl),
   };
+}
+
+function isFinalized(image: MediaImage) {
+  if (!image) return false;
+  if (image.selectedForCart) return true;
+  try {
+    const parsed = typeof image.metadata === "string" ? JSON.parse(image.metadata) : image.metadata;
+    if (parsed && (parsed.draft === false || parsed.generationType === "final")) {
+      return true;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
 }

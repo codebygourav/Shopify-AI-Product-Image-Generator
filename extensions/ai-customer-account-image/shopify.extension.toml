@@ -1,0 +1,19 @@
+api_version = "2025-07"
+
+[[extensions]]
+name = "AI Order Image"
+handle = "ai-customer-account-image"
+type = "ui_extension"
+uid = "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+
+[[extensions.targeting]]
+module = "./src/OrderStatus.jsx"
+target = "customer-account.order-status.cart-line-item.render-after"
+
+[[extensions.targeting]]
+module = "./src/OrderIndex.jsx"
+target = "customer-account.order-index.block.render"
+
+[extensions.capabilities]
+api_access = true
+network_access = true

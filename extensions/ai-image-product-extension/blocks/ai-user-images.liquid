@@ -9,6 +9,7 @@
   data-product-id="{% if product %}{% if product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% else %}gid://shopify/Product/{{ product.id }}{% endif %}{% endif %}"
   data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
+  data-items-limit="{{ block.settings.items_limit }}"
 >
   {% if customer %}
     <div class="aim-section-head">
@@ -17,7 +18,16 @@
         <h2 class="aim-heading">{{ block.settings.heading }}</h2>
       </div>
     </div>
-    <div class="aim-gallery-grid" data-ai-user-images-grid></div>
+    <div class="aim-gallery-grid aim-grid-loading" data-ai-user-images-grid>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+    </div>
   {% else %}
     <div class="aim-section-head">
       <div>
@@ -31,7 +41,7 @@
 
 {% schema %}
 {
-  "name": "AI profile images",
+  "name": "Orvella AI profile images",
   "target": "section",
   "settings": [
     {
@@ -56,6 +66,15 @@
       "type": "url",
       "id": "api_base_url",
       "label": "App API base URL"
+    },
+    {
+      "type": "range",
+      "id": "items_limit",
+      "label": "Images to show",
+      "min": 4,
+      "max": 60,
+      "step": 4,
+      "default": 24
     }
   ]
 }

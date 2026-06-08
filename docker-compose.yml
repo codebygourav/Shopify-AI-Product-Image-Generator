@@ -8,6 +8,7 @@ services:
       cache_from:
         - shopify-ai-product-image-generator-web:latest
     container_name: shopify-ai-app
+    command: sh -c "npx prisma db push && npm run start"
     restart: always
     ports:
       - "8877:3000"
@@ -23,6 +24,7 @@ services:
       - OPENAI_IMAGE_MODEL=${OPENAI_IMAGE_MODEL:-gpt-image-1.5}
       - OPENAI_MODERATION_MODEL=${OPENAI_MODERATION_MODEL:-omni-moderation-latest}
       - IMAGE_GENERATION_MODE=${IMAGE_GENERATION_MODE:-live}
+      - FINALIZE_WITH_AI=${FINALIZE_WITH_AI:-false}
       - SHOPIFY_APP_URL=${APP_URL}
       - APP_PUBLIC_URL=${APP_PUBLIC_URL:-${APP_URL}}
       - SCOPES=${SCOPES}

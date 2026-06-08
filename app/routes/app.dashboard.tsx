@@ -112,221 +112,176 @@ export default function Customers() {
 
   return (
     <s-page heading="Customers">
-      <s-section heading="Customer accounts">
+      <div className={selectedCustomer ? "aim-details-container" : ""}>
         {selectedCustomer ? (
           <CustomerDetail customer={selectedCustomer} />
         ) : null}
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-                <th style={{ padding: 10 }}>Customer</th>
-                <th style={{ padding: 10 }}>Status</th>
-                <th style={{ padding: 10 }}>Images</th>
-                <th style={{ padding: 10 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers.map((customer) => (
-                <tr
-                  key={customer.id}
-                  style={{ borderBottom: "1px solid #eee" }}
-                >
-                  <td style={{ padding: 10 }}>
-                    {customer.displayName ||
-                      customer.email ||
-                      customer.shopifyCustomerId ||
-                      "Guest user"}
-                  </td>
-                  <td style={{ padding: 10 }}>
-                    {customer.isApproved ? "Approved" : "Blocked"}
-                  </td>
-                  <td style={{ padding: 10 }}>{customer._count.generations}</td>
-                  <td style={{ padding: 10 }}>
-                    <s-stack direction="inline" gap="small">
-                      <Link to={`/app/dashboard?customer=${customer.id}`}>
-                        View details
-                      </Link>
-                      <Form method="post">
-                        <input type="hidden" name="id" value={customer.id} />
-                        <button
-                          type="submit"
-                          name="intent"
-                          value={
-                            customer.isApproved
-                              ? "customer:block"
-                              : "customer:approve"
-                          }
-                          style={{ padding: "8px 10px" }}
-                        >
-                          {customer.isApproved ? "Block" : "Approve"}
-                        </button>
-                      </Form>
-                    </s-stack>
-                  </td>
+
+        <s-section heading="Customer accounts">
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer Name / Email</th>
+                  <th>Status</th>
+                  <th>Total Images</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </s-section>
+              </thead>
+              <tbody>
+                {customers.map((customer) => (
+                  <tr key={customer.id}>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{customer.displayName || "Customer"}</div>
+                      <div style={{ fontSize: 12, color: '#6d7175', marginTop: 2 }}>{customer.email || 'No email'}</div>
+                    </td>
+                    <td>
+                      <span className={`aim-badge ${customer.isApproved ? 'aim-badge--success' : 'aim-badge--danger'}`}>
+                        {customer.isApproved ? "Approved" : "Blocked"}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 600 }}>{customer._count.generations}</span>
+                    </td>
+                    <td>
+                      <s-stack direction="inline" gap="small">
+                        <Link to={`/app/dashboard?customer=${customer.id}`} className="button-premium" style={{ textDecoration: 'none', padding: '6px 12px', fontSize: 13 }}>
+                          View Details
+                        </Link>
+                        <Form method="post">
+                          <input type="hidden" name="id" value={customer.id} />
+                          <button
+                            type="submit"
+                            name="intent"
+                            value={customer.isApproved ? "customer:block" : "customer:approve"}
+                            style={{ padding: "6px 12px", fontSize: 13 }}
+                          >
+                            {customer.isApproved ? "Block" : "Approve"}
+                          </button>
+                        </Form>
+                      </s-stack>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </s-section>
+      </div>
     </s-page>
   );
 }
 
 function CustomerDetail({ customer }: { customer: CustomerDetailData }) {
   return (
-    <s-box padding="base" borderWidth="base" borderRadius="base">
-      <s-stack direction="block" gap="base">
-        <s-heading>
-          {customer.displayName ||
-            customer.email ||
-            customer.shopifyCustomerId ||
-            "Guest user"}
-        </s-heading>
-        <s-text tone="neutral">
-          {customer.isApproved ? "Approved" : "Blocked"} ·{" "}
-          {customer.generations.length} images
-        </s-text>
-        <Form method="post">
-          <input type="hidden" name="id" value={customer.id} />
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 12,
-              alignItems: "end",
-            }}
-          >
-            <label style={{ display: "grid", gap: 6 }}>
-              <span>Generation limit</span>
-              <input
-                name="generationLimit"
-                type="number"
-                min="0"
-                defaultValue={customer.generationLimit ?? ""}
-                placeholder="Unlimited"
-                style={{ width: 180, padding: "8px 10px" }}
-              />
-            </label>
-            <button
-              type="submit"
-              name="intent"
-              value="customer:approve"
-              style={{ padding: "8px 10px" }}
-            >
-              Save
-            </button>
-            <button
-              type="submit"
-              name="intent"
-              value="customer:block"
-              style={{ padding: "8px 10px" }}
-            >
-              Block
-            </button>
+    <div style={{ position: 'sticky', top: 20 }}>
+      <s-section heading="Customer Details">
+        <s-stack direction="block" gap="base">
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a' }}>
+              {customer.displayName || "Customer"}
+            </div>
+            <div style={{ fontSize: 13, color: '#6d7175', marginTop: 4 }}>
+              {customer.email || 'No email provided'}
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <span className={`aim-badge ${customer.isApproved ? 'aim-badge--success' : 'aim-badge--danger'}`}>
+                {customer.isApproved ? "Approved" : "Blocked"}
+              </span>
+            </div>
           </div>
-        </Form>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-                <th style={{ padding: 8 }}>Image</th>
-                <th style={{ padding: 8 }}>Prompt</th>
-                <th style={{ padding: 8 }}>State</th>
-                <th style={{ padding: 8 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customer.generations.map((image) => (
-                <tr key={image.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: 8, width: 64 }}>
+
+          <Form method="post" style={{ borderTop: '1px solid #e1e3e5', borderBottom: '1px solid #e1e3e5', padding: '16px 0' }}>
+            <input type="hidden" name="id" value={customer.id} />
+            <s-stack direction="block" gap="small">
+              <label style={{ display: "grid", gap: 6, fontWeight: 600, fontSize: 11, color: '#6d7175', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <span>Generation limit</span>
+                <input
+                  name="generationLimit"
+                  type="number"
+                  min="0"
+                  defaultValue={customer.generationLimit ?? ""}
+                  placeholder="Unlimited"
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+              </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, width: '100%', marginTop: 8 }}>
+                <button
+                  type="submit"
+                  name="intent"
+                  value="customer:approve"
+                  className="button-primary"
+                >
+                  Save Limit
+                </button>
+                <button
+                  type="submit"
+                  name="intent"
+                  value={customer.isApproved ? "customer:block" : "customer:approve"}
+                >
+                  {customer.isApproved ? "Block User" : "Approve User"}
+                </button>
+              </div>
+            </s-stack>
+          </Form>
+
+          <div>
+            <label style={{ fontWeight: 600, fontSize: 11, color: '#6d7175', textTransform: 'uppercase', display: 'block', marginBottom: 12, letterSpacing: '0.5px' }}>
+              Customer AI Creations ({customer.generations.length})
+            </label>
+
+            {customer.generations.length === 0 ? (
+              <s-text tone="neutral">No images generated by this customer.</s-text>
+            ) : (
+              <div style={{ display: 'grid', gap: 12, maxHeight: 320, overflowY: 'auto', paddingRight: 4 }}>
+                {customer.generations.map((image) => (
+                  <div key={image.id} style={{ display: 'flex', gap: 12, background: '#f6f6f7', padding: 8, borderRadius: 8, border: '1px solid #e1e3e5', alignItems: 'center' }}>
                     {image.imageUrl ? (
                       <img
                         src={image.imageUrl}
                         alt={displayPrompt(image.metadata, image.prompt)}
                         style={{
                           width: 48,
-                          aspectRatio: "1",
+                          height: 48,
                           objectFit: "cover",
                           borderRadius: 6,
+                          border: "1px solid #e1e3e5",
+                          flexShrink: 0
                         }}
                       />
                     ) : null}
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <s-text>
-                      {displayPrompt(image.metadata, image.prompt)}
-                    </s-text>
-                    <s-text tone="neutral">
-                      {selectedOptionsSummary(image.metadata) || "No options"}
-                    </s-text>
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    {image.status} · {image.visibility} ·{" "}
-                    {image.moderationStatus}
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Form method="post">
-                      <input type="hidden" name="id" value={image.id} />
-                      <s-stack direction="inline" gap="small">
-                        {image.visibility === "PUBLIC" &&
-                        image.moderationStatus === "PENDING" ? (
-                          <>
-                            <button
-                              type="submit"
-                              name="intent"
-                              value="image:approve"
-                              style={{ padding: "6px 8px" }}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              type="submit"
-                              name="intent"
-                              value="image:reject"
-                              style={{ padding: "6px 8px" }}
-                            >
-                              Reject
-                            </button>
-                          </>
-                        ) : image.visibility === "PUBLIC" ? (
-                          <button
-                            type="submit"
-                            name="intent"
-                            value="image:reject"
-                            style={{ padding: "6px 8px" }}
-                          >
-                            Reject
-                          </button>
-                        ) : null}
-                        <button
-                          type="submit"
-                          name="intent"
-                          value="image:private"
-                          style={{ padding: "6px 8px" }}
-                        >
-                          Private
-                        </button>
-                        <button
-                          type="submit"
-                          name="intent"
-                          value="image:delete"
-                          style={{ padding: "6px 8px" }}
-                        >
-                          Delete
-                        </button>
-                      </s-stack>
-                    </Form>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <s-link href="/app/dashboard">Close details</s-link>
-      </s-stack>
-    </s-box>
+                    <div style={{ flexGrow: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {displayPrompt(image.metadata, image.prompt)}
+                      </div>
+                      <div style={{ fontSize: 10, color: '#6d7175', marginTop: 2 }}>
+                        {selectedOptionsSummary(image.metadata) || "No options"}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                        <span className={`aim-badge ${image.visibility === 'PUBLIC' ? 'aim-badge--info' : 'aim-badge--success'}`} style={{ fontSize: 8, padding: '2px 4px' }}>
+                          {image.visibility}
+                        </span>
+                        <span className={`aim-badge ${
+                          image.moderationStatus === 'APPROVED' ? 'aim-badge--success' :
+                          image.moderationStatus === 'REJECTED' ? 'aim-badge--danger' : 'aim-badge--warning'
+                        }`} style={{ fontSize: 8, padding: '2px 4px' }}>
+                          {image.moderationStatus}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Link to="/app/dashboard" style={{ textDecoration: 'none', textAlign: 'center', display: 'block', fontSize: 13, color: '#008060', fontWeight: 600 }}>
+            Close Customer Details
+          </Link>
+        </s-stack>
+      </s-section>
+    </div>
   );
 }
 

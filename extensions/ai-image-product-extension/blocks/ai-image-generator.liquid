@@ -1,37 +1,59 @@
 {{ 'ai-image-manager.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
 
+{% assign ai_source_product = product %}
+{% if block.settings.source_product != blank %}
+  {% assign ai_source_product = block.settings.source_product %}
+{% endif %}
+
 <div
   class="aim-product-studio"
   data-ai-image-generator
+  data-ai-show-recent-images="{{ block.settings.show_recent_images }}"
   data-api-base="{{ block.settings.api_base_url }}"
   data-shop="{{ shop.permanent_domain }}"
   data-checkout-variant-id="{{ block.settings.checkout_variant_id }}"
-  data-product-id="{% if product and product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% elsif product %}gid://shopify/Product/{{ product.id }}{% endif %}"
-  data-product-handle="{% if product %}{{ product.handle }}{% endif %}"
-  data-product-title="{% if product %}{{ product.title | escape }}{% else %}{{ block.settings.heading | escape }}{% endif %}"
-  data-product-image="{% if product and product.featured_image %}{{ product.featured_image | image_url: width: 900 }}{% endif %}"
+  data-product-id="{% if ai_source_product and ai_source_product.admin_graphql_api_id %}{{ ai_source_product.admin_graphql_api_id }}{% elsif ai_source_product %}gid://shopify/Product/{{ ai_source_product.id }}{% endif %}"
+  data-product-handle="{% if ai_source_product %}{{ ai_source_product.handle }}{% endif %}"
+  data-product-title="{% if ai_source_product %}{{ ai_source_product.title | escape }}{% else %}{{ block.settings.heading | escape }}{% endif %}"
+  data-product-image="{% if ai_source_product and ai_source_product.featured_image %}{{ ai_source_product.featured_image | image_url: width: 900 }}{% endif %}"
   data-money-format="{{ shop.money_format | escape }}"
   data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
+  data-preview-label="{{ block.settings.preview_label | escape }}"
 >
-  <div class="aim-product-studio__media">
-    <div class="aim-product-studio__preview" data-ai-preview>
-      <div class="aim-product-studio__empty">
-        <span>{{ block.settings.preview_label }}</span>
+  <div class="aim-studio-topbar">
+    <a class="aim-studio-back" href="{{ block.settings.back_url | default: routes.root_url }}">← {{ block.settings.back_label }}</a>
+    <div class="aim-studio-topbar__main">
+      <span class="aim-studio-step">1</span>
+      <div>
+        <h2 class="aim-studio-title">{{ block.settings.heading }}</h2>
+        <p class="aim-studio-description">{{ block.settings.description }}</p>
       </div>
     </div>
+    {% if block.settings.upgrade_url != blank %}
+      <div class="aim-studio-usage">
+        <a class="aim-button aim-button--filled" href="{{ block.settings.upgrade_url }}">{{ block.settings.upgrade_label }}</a>
+      </div>
+    {% endif %}
   </div>
 
+  <!-- Left Sidebar: Generate controls -->
   <div class="aim-product-studio__panel">
-    <p class="aim-eyebrow">{{ block.settings.eyebrow }}</p>
-    <h2 class="aim-heading">{{ block.settings.heading }}</h2>
-    <p class="aim-copy">{{ block.settings.description }}</p>
-
-    <div class="aim-studio-options" data-ai-studio-options></div>
+    {% if block.settings.show_banner %}
+      <div class="aim-studio-banner" style="background-color: {{ block.settings.banner_bg_color }}; color: {{ block.settings.banner_text_color }};">
+        <p class="aim-eyebrow" style="color: {{ block.settings.banner_text_color }}; opacity: 0.8;">{{ block.settings.eyebrow }}</p>
+        <h2 class="aim-heading" style="color: {{ block.settings.banner_text_color }};">{{ block.settings.heading }}</h2>
+        <p class="aim-copy" style="color: {{ block.settings.banner_text_color }}; opacity: 0.9;">{{ block.settings.description }}</p>
+      </div>
+    {% else %}
+      <p class="aim-eyebrow">{{ block.settings.eyebrow }}</p>
+      <h2 class="aim-heading">{{ block.settings.heading }}</h2>
+      <p class="aim-copy">{{ block.settings.description }}</p>
+    {% endif %}
 
     <label class="aim-field">
-      <span>Art direction</span>
+      <span>Describe your vision</span>
       <textarea
         class="aim-textarea"
         rows="4"
@@ -42,7 +64,7 @@
 
     <div class="aim-prompt-tools" data-ai-prompt-tools></div>
 
-    <label class="aim-checkbox">
+    <label class="aim-checkbox" hidden>
       <input type="checkbox" data-ai-public>
       Add approved image to community gallery
     </label>
@@ -51,58 +73,189 @@
       <button class="aim-button aim-button--primary" type="button" data-ai-generate>
         {{ block.settings.button_label }}
       </button>
-      <button class="aim-button" type="button" data-ai-select hidden>
-        Use this image for checkout
-      </button>
-      <button class="aim-button aim-button--primary" type="button" data-ai-add-to-cart hidden>
-        Add selected image to cart
+      <button class="aim-button aim-button--outline" type="button" data-ai-return-editor style="display: none;">
+        Return to Editor
       </button>
     </div>
 
     <p class="aim-status" data-ai-status></p>
   </div>
+
+  <!-- Right Area: Customizer (only visible in editor screen mode) -->
+  <div class="aim-product-studio__media">
+    <div class="aim-generator-empty-panel" data-ai-empty-panel>
+      <div class="aim-product-studio__empty aim-product-studio__empty--studio">
+        <div class="aim-empty-art" aria-hidden="true">
+          <div class="aim-empty-art__plant"></div>
+          <div class="aim-empty-art__easel">
+            <div class="aim-empty-art__canvas">
+              <span></span>
+            </div>
+          </div>
+          <div class="aim-empty-art__tools"></div>
+        </div>
+        <strong>Your creativity starts here</strong>
+        <p>{{ block.settings.description }}</p>
+      </div>
+    </div>
+
+    <!-- Your Generated Images -->
+    <div class="aim-generated-section" data-ai-generated-section hidden>
+      <div class="aim-generated-section__head">
+        <h4 class="aim-section-subtitle">Your Generated Images</h4>
+        <button class="aim-button aim-button--outline aim-button--compact" type="button" data-ai-select-image-button>Select Image</button>
+      </div>
+      <div class="aim-draft-thumbs-container" data-ai-draft-thumbs-container></div>
+    </div>
+
+    <!-- Customize Grid -->
+    <div class="aim-customizer-section" data-ai-customizer-section hidden>
+      <div class="aim-editor-header">
+        <div class="aim-editor-title-group">
+          <h3 class="aim-heading--editor">Customize Your Artwork</h3>
+        </div>
+        <div class="aim-editor-actions">
+          <button type="button" class="aim-button aim-button--outline" data-ai-editor-reset>Clear</button>
+          <button class="aim-button aim-button--filled" type="button" data-ai-select hidden>
+            Finalize & Checkout
+          </button>
+        </div>
+      </div>
+      <div class="aim-customize-grid">
+        <!-- 1. Select Size -->
+        <div class="aim-customize-col">
+          <h4 class="aim-section-subtitle">1. Select Size</h4>
+          <div class="aim-size-controls" data-ai-size-placeholder></div>
+        </div>
+
+        <!-- 2. Choose Frame -->
+        <div class="aim-customize-col">
+          <h4 class="aim-section-subtitle">2. Choose Frame</h4>
+          <div class="aim-frame-controls" data-ai-frame-placeholder></div>
+        </div>
+
+        <!-- 3. Preview -->
+        <div class="aim-customize-col">
+          <h4 class="aim-section-subtitle">3. Preview</h4>
+          <div class="aim-product-studio__preview" data-ai-preview>
+            <div class="aim-product-studio__empty">
+              <span>Your creativity starts here</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+{% if block.settings.show_community_gallery %}
+  <div class="aim-community aim-generator-community" data-ai-gallery data-api-base="{{ block.settings.api_base_url }}" data-shop="{{ shop.permanent_domain }}" data-configurator-url="{{ request.path }}" data-community-url="{{ block.settings.community_url | default: '/pages/community-gallery' }}">
+    <div class="aim-section-head">
+      <div>
+        <p class="aim-eyebrow">Creations</p>
+        <h2 class="aim-heading">{{ block.settings.community_heading }}</h2>
+        <p class="aim-copy">{{ block.settings.community_description }}</p>
+      </div>
+    </div>
+    <div class="aim-gallery-grid aim-pinterest-grid aim-grid-loading" data-ai-gallery-grid>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+      <div class="aim-grid-loading__card" aria-hidden="true"></div>
+    </div>
+  </div>
+{% endif %}
 
 {% schema %}
 {
-  "name": "AI product image studio",
+  "name": "Orvella AI generator",
   "target": "section",
   "settings": [
+    {
+      "type": "product",
+      "id": "source_product",
+      "label": "Source product",
+      "info": "Optional. Leave empty on product templates to use the current product dynamically."
+    },
     {
       "type": "text",
       "id": "eyebrow",
       "label": "Eyebrow",
-      "default": "Custom AI artwork"
+      "default": "AI Studio"
     },
     {
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Create your print before checkout"
+      "default": "Generate your own image"
     },
     {
       "type": "textarea",
       "id": "description",
       "label": "Description",
-      "default": "Choose your product variant, describe the artwork, generate a preview, then attach the selected image to your cart item."
+      "default": "Describe your idea and let AI create something unique."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_banner",
+      "label": "Show text banner on prompt screen",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "banner_bg_color",
+      "label": "Banner background color",
+      "default": "#E3DCD6"
+    },
+    {
+      "type": "color",
+      "id": "banner_text_color",
+      "label": "Banner text color",
+      "default": "#545454"
     },
     {
       "type": "text",
       "id": "preview_label",
       "label": "Empty preview label",
-      "default": "Your generated image will appear here"
+      "default": "Your creativity starts here"
     },
     {
       "type": "text",
       "id": "placeholder",
       "label": "Prompt placeholder",
-      "default": "Example: warm abstract botanical artwork for a walnut frame"
+      "default": "Describe the image you want to create..."
     },
     {
       "type": "text",
       "id": "button_label",
       "label": "Button label",
       "default": "Generate image"
+    },
+    {
+      "type": "text",
+      "id": "back_label",
+      "label": "Back link label",
+      "default": "Back to AI Studio"
+    },
+    {
+      "type": "url",
+      "id": "back_url",
+      "label": "Back link URL"
+    },
+    {
+      "type": "text",
+      "id": "upgrade_label",
+      "label": "Upgrade button label",
+      "default": "Upgrade for more"
+    },
+    {
+      "type": "url",
+      "id": "upgrade_url",
+      "label": "Upgrade button URL"
     },
     {
       "type": "url",
@@ -115,6 +268,36 @@
       "id": "checkout_variant_id",
       "label": "Checkout variant ID override",
       "info": "Optional. Use this when the block is placed on a custom page without a Shopify product form."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_community_gallery",
+      "label": "Show community gallery below generator",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_recent_images",
+      "label": "Show customer generated images inside generator",
+      "default": false
+    },
+    {
+      "type": "url",
+      "id": "community_url",
+      "label": "Community gallery page URL",
+      "info": "Used when customer clicks Go to community from inspiration images."
+    },
+    {
+      "type": "text",
+      "id": "community_heading",
+      "label": "Community heading",
+      "default": "Community Inspirations"
+    },
+    {
+      "type": "textarea",
+      "id": "community_description",
+      "label": "Community description",
+      "default": "Explore what other users generated and choose your favorite artwork."
     }
   ]
 }

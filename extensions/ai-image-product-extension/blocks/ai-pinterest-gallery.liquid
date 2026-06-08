@@ -2,12 +2,14 @@
 <script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
 
 <section
-  class="aim-community"
+  class="aim-community aim-pinterest-gallery"
   data-ai-gallery
   data-api-base="{{ block.settings.api_base_url }}"
   data-shop="{{ shop.permanent_domain }}"
   data-configurator-url="{{ block.settings.configurator_url }}"
+  data-community-url="{{ block.settings.community_url | default: '/pages/community-gallery' }}"
   data-items-limit="{{ block.settings.items_limit }}"
+  data-layout-style="{{ block.settings.layout_style }}"
   data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
   data-product-id="{% if product %}{% if product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% else %}gid://shopify/Product/{{ product.id }}{% endif %}{% endif %}"
@@ -18,7 +20,13 @@
       <h2 class="aim-heading">{{ block.settings.heading }}</h2>
     </div>
   </div>
-  <div class="aim-gallery-grid aim-grid-loading" data-ai-gallery-grid>
+  
+  <div 
+    class="aim-grid-loading {% if block.settings.layout_style == 'masonry' %}aim-pinterest-grid{% elsif block.settings.layout_style == 'slider' %}aim-gallery-slider{% else %}aim-gallery-grid{% endif %}" 
+    data-ai-gallery-grid
+  >
+    <div class="aim-grid-loading__card" aria-hidden="true"></div>
+    <div class="aim-grid-loading__card" aria-hidden="true"></div>
     <div class="aim-grid-loading__card" aria-hidden="true"></div>
     <div class="aim-grid-loading__card" aria-hidden="true"></div>
     <div class="aim-grid-loading__card" aria-hidden="true"></div>
@@ -30,32 +38,47 @@
 
 {% schema %}
 {
-  "name": "Orvella AI community",
+  "name": "Orvella AI Showcase",
   "target": "section",
   "settings": [
     {
       "type": "text",
       "id": "eyebrow",
       "label": "Eyebrow",
-      "default": "Moodboard"
+      "default": "Inspirations"
     },
     {
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Moodboard Gallery"
+      "default": "Pinterest Gallery"
+    },
+    {
+      "type": "select",
+      "id": "layout_style",
+      "label": "Layout style",
+      "options": [
+        { "value": "masonry", "label": "Pinterest Masonry" },
+        { "value": "grid", "label": "Regular Grid" },
+        { "value": "slider", "label": "Carousel Slider" }
+      ],
+      "default": "masonry"
     },
     {
       "type": "url",
       "id": "api_base_url",
-      "label": "App API base URL",
-      "info": "Use your app URL during development, or your Shopify app proxy URL in production."
+      "label": "App API base URL"
     },
     {
       "type": "url",
       "id": "configurator_url",
       "label": "AI configurator page URL",
-      "info": "Used when a customer regenerates from a community image."
+      "info": "Used when a customer clicks to use or redesign."
+    },
+    {
+      "type": "url",
+      "id": "community_url",
+      "label": "Community gallery page URL"
     },
     {
       "type": "range",

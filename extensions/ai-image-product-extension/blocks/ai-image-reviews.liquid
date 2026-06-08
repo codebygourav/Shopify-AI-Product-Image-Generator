@@ -9,6 +9,7 @@
   data-product-id="{% if product %}{% if product.admin_graphql_api_id %}{{ product.admin_graphql_api_id }}{% else %}gid://shopify/Product/{{ product.id }}{% endif %}{% endif %}"
   data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
+  data-items-limit="{{ block.settings.items_limit }}"
 >
   <div class="aim-section-head">
     <div>
@@ -19,13 +20,14 @@
   <div class="aim-review-list" data-ai-review-list></div>
   <form class="aim-review-form" data-ai-review-form>
     <select name="generationId" data-ai-review-image></select>
-    <select name="rating">
-      <option value="5">5 stars</option>
-      <option value="4">4 stars</option>
-      <option value="3">3 stars</option>
-      <option value="2">2 stars</option>
-      <option value="1">1 star</option>
-    </select>
+    <div class="aim-star-input" data-ai-star-input>
+      <button type="button" class="is-active" data-ai-rating="1" aria-label="1 star">★</button>
+      <button type="button" class="is-active" data-ai-rating="2" aria-label="2 stars">★</button>
+      <button type="button" class="is-active" data-ai-rating="3" aria-label="3 stars">★</button>
+      <button type="button" class="is-active" data-ai-rating="4" aria-label="4 stars">★</button>
+      <button type="button" class="is-active" data-ai-rating="5" aria-label="5 stars">★</button>
+    </div>
+    <input type="hidden" name="rating" value="5">
     <textarea name="comment" rows="3" placeholder="Write a review"></textarea>
     <button type="submit" class="aim-button aim-button--primary">Submit review</button>
     <p class="aim-status" data-ai-review-status></p>
@@ -34,7 +36,7 @@
 
 {% schema %}
 {
-  "name": "AI image reviews",
+  "name": "Orvella AI reviews",
   "target": "section",
   "settings": [
     {
@@ -53,6 +55,15 @@
       "type": "url",
       "id": "api_base_url",
       "label": "App API base URL"
+    },
+    {
+      "type": "range",
+      "id": "items_limit",
+      "label": "Reviews to show",
+      "min": 4,
+      "max": 60,
+      "step": 4,
+      "default": 12
     }
   ]
 }

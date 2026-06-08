@@ -1,4 +1,16 @@
 {{ 'ai-image-manager.css' | asset_url | stylesheet_tag }}
+{% assign has_ai_cart_line_images = false %}
+{% for item in cart.items %}
+  {% if item.properties['_AI Image URL'] != blank %}
+    {% assign has_ai_cart_line_images = true %}
+  {% endif %}
+{% endfor %}
+
+{% if has_ai_cart_line_images %}
+  <script>
+    document.documentElement.dataset.aiCartLineImages = 'loading';
+  </script>
+{% endif %}
 <script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
 
 {% schema %}

@@ -274,6 +274,30 @@ export async function uploadImageToShopifyFiles({
   return fileUrl;
 }
 
+export async function clonePoolImageToUniqueFile(poolImageUrl) {
+  const filename = String(poolImageUrl || "").match(
+    /\/ai-generated\/([^/?#]+\.(?:png|jpe?g|webp))/i,
+  )?.[1];
+  if (!filename) {
+    throw new Error("Draft pool image path is invalid.");
+  }
+
+  const fs = await import("node:fs/promises");
+  const path = await import("node:path");
+  const crypto = await import("node:crypto");
+  const sourcePath = path.join(process.cwd(), "public", "ai-generated", filename);
+  const buffer = await fs.readFile(sourcePath);
+  const extension = filename.split(".").pop() || "jpg";
+  const token = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
+  const nextFilename = `ai-${Date.now()}-${token}.${extension}`;
+  const uploadDir = path.join(process.cwd(), "public", "ai-generated");
+
+  await fs.mkdir(uploadDir, { recursive: true });
+  await fs.writeFile(path.join(uploadDir, nextFilename), buffer);
+
+  return `/ai-generated/${nextFilename}`;
+}
+
 export async function saveGeneratedImageToPublicUrl({
   imageUrl,
   base64Data,
@@ -310,8 +334,11 @@ export async function saveGeneratedImageToPublicUrl({
     throw new Error("OpenAI did not return image data that can be saved.");
   }
 
-  const extension =
-    contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "png";
+  const extension = contentType.includes("webp")
+    ? "webp"
+    : contentType.includes("jpeg") || contentType.includes("jpg")
+      ? "jpg"
+      : "png";
   const crypto = await import("node:crypto");
   const token = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
   const filename = `ai-${Date.now()}-${token}.${extension}`;

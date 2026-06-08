@@ -14,6 +14,7 @@ export async function action({ request }) {
 export async function loader({ request }) {
   const url = new URL(request.url);
   const shopDomain = url.searchParams.get("shop");
+  const take = clampTake(url.searchParams.get("take"), 24);
   if (!shopDomain) {
     return corsJson(
       { success: false, error: "shop is required" },
@@ -30,12 +31,38 @@ export async function loader({ request }) {
       visibility: "PUBLIC",
       moderationStatus: "APPROVED",
       status: "COMPLETED",
-      take: 24,
+      take,
+      ...(url.searchParams.get("creatorId")
+        ? { customerId: url.searchParams.get("creatorId") }
+        : {}),
     });
 
-    return corsJson({ success: true, images });
+    return corsJson({
+      success: true,
+      images: images.filter((image) => image.moderationStatus !== "REJECTED" && isFinalized(image)),
+    });
   } catch (err) {
     console.error("api.gallery error", err);
     return corsJson({ success: false, error: err.message }, { status: 500 });
   }
+}
+
+function isFinalized(image) {
+  if (!image) return false;
+  if (image.selectedForCart) return true;
+  try {
+    const parsed = typeof image.metadata === "string" ? JSON.parse(image.metadata) : image.metadata;
+    if (parsed && (parsed.draft === false || parsed.generationType === "final")) {
+      return true;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
+
+function clampTake(value, fallback) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.max(1, Math.min(60, Math.floor(numeric)));
 }

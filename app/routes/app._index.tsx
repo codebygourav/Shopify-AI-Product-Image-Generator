@@ -35,51 +35,84 @@ export default function Index() {
 
   return (
     <s-page heading="Overview">
+      {/* Metrics Cards Grid */}
+      <div className="aim-metrics-grid">
+        <div className="aim-metric-card">
+          <div className="aim-metric-title">Total AI Creations</div>
+          <div className="aim-metric-value">{data.total}</div>
+        </div>
+        <div className="aim-metric-card accent-purple">
+          <div className="aim-metric-title">Community Requests</div>
+          <div className="aim-metric-value">{data.publicCount}</div>
+        </div>
+        <div className="aim-metric-card accent-orange">
+          <div className="aim-metric-title">Awaiting Moderation</div>
+          <div className="aim-metric-value">{data.pendingModeration}</div>
+        </div>
+      </div>
+
       <s-section heading="Recent activity">
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table>
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-                <th style={{ padding: 10 }}>Preview</th>
-                <th style={{ padding: 10 }}>Prompt</th>
-                <th style={{ padding: 10 }}>Customer</th>
-                <th style={{ padding: 10 }}>State</th>
+              <tr>
+                <th style={{ width: 80 }}>Preview</th>
+                <th>Prompt</th>
+                <th>Customer</th>
+                <th>Visibility</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {data.recent.map((item) => (
-                <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: 10, width: 76 }}>
+                <tr key={item.id}>
+                  <td>
                     {item.imageUrl ? (
                       <img
                         src={item.imageUrl}
                         alt={item.prompt}
                         style={{
                           width: 56,
-                          aspectRatio: "1",
+                          height: 56,
                           objectFit: "cover",
-                          borderRadius: 6,
+                          borderRadius: 8,
+                          border: "1px solid #e1e3e5",
+                          display: "block"
                         }}
                       />
                     ) : null}
                   </td>
-                  <td style={{ padding: 10, maxWidth: 520 }}>
+                  <td style={{ maxWidth: 460 }}>
                     <div
                       style={{
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical",
                         overflow: "hidden",
+                        lineHeight: 1.4,
+                        fontWeight: 500
                       }}
                     >
                       <s-text>{item.prompt}</s-text>
                     </div>
                   </td>
-                  <td style={{ padding: 10 }}>
-                    {item.customer?.email || "Guest"}
+                  <td>
+                    <span style={{ fontWeight: 500 }}>
+                      {item.customer?.email || "Guest User"}
+                    </span>
                   </td>
-                  <td style={{ padding: 10 }}>
-                    {item.status} · {item.visibility}
+                  <td>
+                    <span className={`aim-badge ${item.visibility === 'PUBLIC' ? 'aim-badge--info' : 'aim-badge--success'}`}>
+                      {item.visibility}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`aim-badge ${
+                      item.status === 'COMPLETED' ? 'aim-badge--success' : 
+                      item.status === 'FAILED' ? 'aim-badge--danger' : 'aim-badge--warning'
+                    }`}>
+                      {item.status}
+                    </span>
                   </td>
                 </tr>
               ))}

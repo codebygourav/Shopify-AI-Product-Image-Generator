@@ -6,9 +6,16 @@ export function isLiveGeneration() {
   return generationMode() === "live";
 }
 
-export function testImageUrl() {
-  return (
-    process.env.TEST_IMAGE_URL ||
-    "https://dummyimage.com/1024x1024/7d7355/ffffff.png&text=Generated+AI+Image"
-  );
+const DEFAULT_TEST_IMAGES = [
+  "/ai-generated/ai-1780664295095-d3a26a02dc23.jpg",
+  "/ai-generated/ai-1780664295096-be7eb6733559.jpg",
+];
+
+export function testImageUrl(index = 0) {
+  const configuredUrls = String(process.env.TEST_IMAGE_URLS || "")
+    .split(",")
+    .map((url) => url.trim())
+    .filter(Boolean);
+  const urls = configuredUrls.length ? configuredUrls : DEFAULT_TEST_IMAGES;
+  return urls[Math.abs(index) % urls.length];
 }

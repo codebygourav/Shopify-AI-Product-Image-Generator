@@ -1,7 +1,7 @@
 export async function loader({ params }) {
   const filename = params.filename || "";
 
-  if (!/^[a-zA-Z0-9._-]+\.(png|jpg|jpeg)$/i.test(filename)) {
+  if (!/^[a-zA-Z0-9._-]+\.(png|jpg|jpeg|webp)$/i.test(filename)) {
     return new Response("Not found", { status: 404 });
   }
 
@@ -15,9 +15,10 @@ export async function loader({ params }) {
       filename,
     );
     const file = await fs.readFile(filePath);
-    const contentType =
-      filename.toLowerCase().endsWith(".jpg") ||
-      filename.toLowerCase().endsWith(".jpeg")
+    const lowerFilename = filename.toLowerCase();
+    const contentType = lowerFilename.endsWith(".webp")
+      ? "image/webp"
+      : lowerFilename.endsWith(".jpg") || lowerFilename.endsWith(".jpeg")
         ? "image/jpeg"
         : "image/png";
 
