@@ -7,8 +7,9 @@ export function isLiveGeneration() {
 }
 
 const DEFAULT_TEST_IMAGES = [
-  "/ai-generated/ai-1780664295095-d3a26a02dc23.jpg",
-  "/ai-generated/ai-1780664295096-be7eb6733559.jpg",
+  "/ai-generated/ai-1780375616027-825dbe7f4b9e.png",
+  "/ai-generated/ai-1780377295119-733654541932.png",
+  "/ai-generated/ai-1780377801685-455a9467f9fc.png",
 ];
 
 export function testImageUrl(index = 0) {

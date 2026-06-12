@@ -22,63 +22,59 @@
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
   data-preview-label="{{ block.settings.preview_label | escape }}"
 >
-  <div class="aim-studio-topbar">
-    <a class="aim-studio-back" href="{{ block.settings.back_url | default: routes.root_url }}">← {{ block.settings.back_label }}</a>
-    <div class="aim-studio-topbar__main">
-      <span class="aim-studio-step">1</span>
-      <div>
-        <h2 class="aim-studio-title">{{ block.settings.heading }}</h2>
-        <p class="aim-studio-description">{{ block.settings.description }}</p>
-      </div>
-    </div>
-    {% if block.settings.upgrade_url != blank %}
-      <div class="aim-studio-usage">
-        <a class="aim-button aim-button--filled" href="{{ block.settings.upgrade_url }}">{{ block.settings.upgrade_label }}</a>
-      </div>
-    {% endif %}
-  </div>
+
 
   <!-- Left Sidebar: Generate controls -->
   <div class="aim-product-studio__panel">
-    {% if block.settings.show_banner %}
-      <div class="aim-studio-banner" style="background-color: {{ block.settings.banner_bg_color }}; color: {{ block.settings.banner_text_color }};">
-        <p class="aim-eyebrow" style="color: {{ block.settings.banner_text_color }}; opacity: 0.8;">{{ block.settings.eyebrow }}</p>
-        <h2 class="aim-heading" style="color: {{ block.settings.banner_text_color }};">{{ block.settings.heading }}</h2>
-        <p class="aim-copy" style="color: {{ block.settings.banner_text_color }}; opacity: 0.9;">{{ block.settings.description }}</p>
+    <div class="aim-prompt-content">
+      <div class="aim-prompt-panel-head">
+        <p>Custom art studio</p>
+        <h2>Create Your Own Artwork</h2>
+        <span>Describe the artwork, mood, colors, or room style. After generation, choose a draft and customize the frame.</span>
       </div>
-    {% else %}
-      <p class="aim-eyebrow">{{ block.settings.eyebrow }}</p>
-      <h2 class="aim-heading">{{ block.settings.heading }}</h2>
-      <p class="aim-copy">{{ block.settings.description }}</p>
-    {% endif %}
 
-    <label class="aim-field">
-      <span>Describe your vision</span>
-      <textarea
-        class="aim-textarea"
-        rows="4"
-        data-ai-prompt
-        placeholder="{{ block.settings.placeholder }}"
-      ></textarea>
-    </label>
+      <label class="aim-field">
+        <span>Describe your vision</span>
+        <textarea
+          class="aim-textarea"
+          rows="4"
+          data-ai-prompt
+          placeholder="{{ block.settings.placeholder }}"
+        ></textarea>
+      </label>
 
-    <div class="aim-prompt-tools" data-ai-prompt-tools></div>
+      <div class="aim-prompt-tools" data-ai-prompt-tools></div>
 
-    <label class="aim-checkbox" hidden>
-      <input type="checkbox" data-ai-public>
-      Add approved image to community gallery
-    </label>
+      <label class="aim-checkbox" hidden>
+        <input type="checkbox" data-ai-public>
+        Add approved image to community gallery
+      </label>
 
-    <div class="aim-actions">
-      <button class="aim-button aim-button--primary" type="button" data-ai-generate>
-        {{ block.settings.button_label }}
-      </button>
-      <button class="aim-button aim-button--outline" type="button" data-ai-return-editor style="display: none;">
-        Return to Editor
-      </button>
+      <div class="aim-actions">
+        <button class="aim-button aim-button--primary" type="button" data-ai-generate>
+          {{ block.settings.button_label }}
+        </button>
+        <button class="aim-button aim-button--outline" type="button" data-ai-return-editor style="display: none;">
+          Return to Editor
+        </button>
+      </div>
+
+      <p class="aim-status" data-ai-status></p>
     </div>
 
-    <p class="aim-status" data-ai-status></p>
+    <div class="aim-prompt-showcase" data-ai-prompt-showcase>
+      {% if ai_source_product and ai_source_product.featured_image %}
+        <img
+          src="{{ ai_source_product.featured_image | image_url: width: 760 }}"
+          alt=""
+          loading="lazy"
+          data-ai-prompt-showcase-image
+        >
+      {% endif %}
+      <button class="aim-prompt-showcase__edit" type="button" data-ai-edit-preview aria-label="Edit generated image" hidden>
+        ✎
+      </button>
+    </div>
   </div>
 
   <!-- Right Area: Customizer (only visible in editor screen mode) -->

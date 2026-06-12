@@ -71,7 +71,9 @@
   function showGlobalLoading(message) {
     globalLoadingCount += 1;
     if (globalLoadingNode) {
-      const label = globalLoadingNode.querySelector("[data-ai-loading-message]");
+      const label = globalLoadingNode.querySelector(
+        "[data-ai-loading-message]",
+      );
       if (label) label.textContent = message || "Loading...";
       return;
     }
@@ -177,10 +179,10 @@
     const variantId = idInput?.value || "";
     const optionInputs = form
       ? Array.from(
-        form.querySelectorAll(
-          "select[name^='options'], select[name^='option'], input[name^='options']:checked, input[name^='option']:checked, fieldset input[type='radio']:checked",
-        ),
-      )
+          form.querySelectorAll(
+            "select[name^='options'], select[name^='option'], input[name^='options']:checked, input[name^='option']:checked, fieldset input[type='radio']:checked",
+          ),
+        )
       : [];
     const labels = optionInputs
       .map((input) => optionLabel(input))
@@ -279,7 +281,9 @@
       // Apply preview wrapping for customized configurations (frames, matting, aspect-ratio, effects)
       let selections = null;
       try {
-        const selectionsStr = item.properties?.["_AI Final Selections"] || item.properties?.["_AI Final Options"];
+        const selectionsStr =
+          item.properties?.["_AI Final Selections"] ||
+          item.properties?.["_AI Final Options"];
         if (selectionsStr) {
           selections = JSON.parse(selectionsStr);
         }
@@ -349,7 +353,10 @@
         const propWrapper = el.closest(
           'li, p, .product-option, [class*="option"], [class*="property"]',
         );
-        if (text.includes("AI Image URL") || text.includes("AI Image Preview")) {
+        if (
+          text.includes("AI Image URL") ||
+          text.includes("AI Image Preview")
+        ) {
           if (propWrapper) {
             propWrapper.style.display = "none";
           } else if (!el.children.length) {
@@ -710,8 +717,8 @@
     if (!response.ok) {
       throw new Error(
         data.description ||
-        data.message ||
-        "Could not add generated image to cart.",
+          data.message ||
+          "Could not add generated image to cart.",
       );
     }
 
@@ -734,7 +741,16 @@
       const optionsRoot = root.querySelector("[data-ai-studio-options]");
       const promptTools = root.querySelector("[data-ai-prompt-tools]");
       const form = productForm(root);
-      const selectImageButton = root.querySelector("[data-ai-select-image-button]");
+      const selectImageButton = root.querySelector(
+        "[data-ai-select-image-button]",
+      );
+      const promptShowcaseImage = root.querySelector(
+        "[data-ai-prompt-showcase-image]",
+      );
+      const editPreviewButton = root.querySelector("[data-ai-edit-preview]");
+      if (promptShowcaseImage?.src) {
+        root.dataset.aiDefaultPromptPreview = promptShowcaseImage.src;
+      }
       let selectedImage = null;
       let draftVariants = [];
       let finalSelections = defaultFinalSelections();
@@ -743,10 +759,12 @@
       root._setSelectedImage = (img) => {
         selectedImage = img;
         root._selectedImage = img;
+        syncPromptShowcase(root);
       };
       root._setDraftVariants = (vars) => {
         draftVariants = vars;
         root._draftVariants = vars;
+        syncPromptShowcase(root);
       };
       root._setFinalSelections = (sels) => {
         finalSelections = sels;
@@ -768,6 +786,20 @@
 
       const returnButton = root.querySelector("[data-ai-return-editor]");
       returnButton?.addEventListener("click", () => {
+        if (selectedImage) {
+          setStudioStep(root, "editor");
+        }
+      });
+
+      editPreviewButton?.addEventListener("click", () => {
+        if (!selectedImage && draftVariants[0]) {
+          root._setSelectedImage(
+            mergeImageFinalSelections(
+              draftVariants[0],
+              defaultFinalSelections(),
+            ),
+          );
+        }
         if (selectedImage) {
           setStudioStep(root, "editor");
         }
@@ -797,7 +829,7 @@
         const template = event.target.closest("[data-ai-template]");
         if (!template) return;
 
-        textarea.value = `${template.dataset.aiTemplate}, for ${studioConfig.title || root.dataset.productTitle}`;
+        textarea.value = template.dataset.aiTemplate || "";
         textarea.focus();
       });
 
@@ -871,10 +903,12 @@
           root._setDraftVariants(nextVariants);
           root._userEditing = true;
           setStudioStep(root, "editor");
-          root._setSelectedImage(mergeImageFinalSelections(
-            draftVariants[0],
-            defaultFinalSelections(),
-          ));
+          root._setSelectedImage(
+            mergeImageFinalSelections(
+              draftVariants[0],
+              defaultFinalSelections(),
+            ),
+          );
           root._setFinalSelections(metadataFinalSelections(selectedImage));
           generatedPreviewHtml = previewImageHtml(
             selectedImage.imageUrl || data.image,
@@ -1056,19 +1090,25 @@
   setTimeout(enhanceStaticImages, 1500);
   window.addEventListener("pageshow", (event) => {
     resetTransientLoadingState();
-    document.querySelectorAll("[data-ai-gallery].is-detail-active").forEach((root) => {
-      root.classList.remove("is-detail-active");
-      root.querySelector("[data-ai-community-detail]")?.remove();
-      const sectionHead = directCommunityChild(root, ".aim-section-head");
-      const grid = directCommunityChild(root, "[data-ai-gallery-grid]");
-      [sectionHead, grid].forEach((element) => {
-        if (!element) return;
-        element.hidden = false;
-        element.style.display = "";
+    document
+      .querySelectorAll("[data-ai-gallery].is-detail-active")
+      .forEach((root) => {
+        root.classList.remove("is-detail-active");
+        root.querySelector("[data-ai-community-detail]")?.remove();
+        const sectionHead = directCommunityChild(root, ".aim-section-head");
+        const grid = directCommunityChild(root, "[data-ai-gallery-grid]");
+        [sectionHead, grid].forEach((element) => {
+          if (!element) return;
+          element.hidden = false;
+          element.style.display = "";
+        });
       });
-    });
     document.querySelectorAll("[data-ai-image-generator]").forEach((root) => {
-      if (event.persisted && root.dataset.aiStudioStep === "editor" && !root._userEditing) {
+      if (
+        event.persisted &&
+        root.dataset.aiStudioStep === "editor" &&
+        !root._userEditing
+      ) {
         resetGeneratorState(root);
       }
     });
@@ -1076,12 +1116,17 @@
 
   document.querySelectorAll("[data-ai-gallery]").forEach(async (root) => {
     const grid = root.querySelector("[data-ai-gallery-grid]");
-    const isGeneratorCommunity = root.classList.contains("aim-generator-community");
+    const isGeneratorCommunity = root.classList.contains(
+      "aim-generator-community",
+    );
     const isPinterest = root.classList.contains("aim-pinterest-gallery");
     const isImageOnlyGallery = isGeneratorCommunity || isPinterest;
     showGridLoading(grid, isImageOnlyGallery ? 8 : 6);
     let images = [];
-    let studioConfig = { optionGroups: [], editorOptions: defaultEditorOptions() };
+    let studioConfig = {
+      optionGroups: [],
+      editorOptions: defaultEditorOptions(),
+    };
     try {
       [images, studioConfig] = await Promise.all([
         fetchImages(
@@ -1096,7 +1141,10 @@
     }
     grid?.classList.toggle("aim-moodboard-grid", !isImageOnlyGallery);
     grid?.classList.toggle("aim-inspiration-masonry", isImageOnlyGallery);
-    grid?.classList.toggle("aim-pinterest-grid", isPinterest || isGeneratorCommunity);
+    grid?.classList.toggle(
+      "aim-pinterest-grid",
+      isPinterest || isGeneratorCommunity,
+    );
     const galleryMode = isGeneratorCommunity
       ? "inspiration"
       : isPinterest
@@ -1124,7 +1172,11 @@
       grid?.classList.remove("aim-grid-loading");
       grid?.removeAttribute("aria-busy");
     }
-    grid?.classList.add("aim-library-grid", "aim-pinterest-grid", "aim-inspiration-masonry");
+    grid?.classList.add(
+      "aim-library-grid",
+      "aim-pinterest-grid",
+      "aim-inspiration-masonry",
+    );
     grid.innerHTML = renderCards(images, { mode: "user" });
     bindImageCardActions(root, grid);
   });
@@ -1212,7 +1264,8 @@
             throw new Error(result.error || "Review could not be submitted.");
           }
           form.reset();
-          if (status) status.textContent = result.message || "Review submitted.";
+          if (status)
+            status.textContent = result.message || "Review submitted.";
           const newReviews = await fetchReviews(root);
           if (list) list.innerHTML = renderReviews(newReviews);
         } catch (error) {
@@ -1265,7 +1318,9 @@
 
   function toggleGeneratorImageSections(root, visible) {
     const generatedSection = root.querySelector("[data-ai-generated-section]");
-    const customizerSection = root.querySelector("[data-ai-customizer-section]");
+    const customizerSection = root.querySelector(
+      "[data-ai-customizer-section]",
+    );
     const emptyPanel = root.querySelector("[data-ai-empty-panel]");
     if (generatedSection) generatedSection.hidden = !visible;
     if (customizerSection) customizerSection.hidden = !visible;
@@ -1307,7 +1362,10 @@
     try {
       const params = new URLSearchParams({ shop: root?.dataset?.shop || "" });
       const response = await fetch(
-        apiUrl(root?.dataset?.apiBase, `/api/studio-config?${params.toString()}`),
+        apiUrl(
+          root?.dataset?.apiBase,
+          `/api/studio-config?${params.toString()}`,
+        ),
       );
       const data = await readJson(response);
       const config = data.studioProduct || fallback;
@@ -1333,11 +1391,11 @@
             <span>${escapeHtml(group.name)}</span>
             <select data-ai-option data-ai-option-name="${escapeHtml(group.name)}" data-ai-option-prompt="${escapeHtml(group.promptLabel || group.name)}">
               ${values
-            .map(
-              (value, valueIndex) =>
-                `<option value="${escapeHtml(value)}" ${valueIndex === 0 ? "selected" : ""}>${escapeHtml(value)}</option>`,
-            )
-            .join("")}
+                .map(
+                  (value, valueIndex) =>
+                    `<option value="${escapeHtml(value)}" ${valueIndex === 0 ? "selected" : ""}>${escapeHtml(value)}</option>`,
+                )
+                .join("")}
             </select>
           </label>
         `;
@@ -1369,41 +1427,41 @@
         <legend>Color Palette</legend>
         <div class="aim-color-options">
           ${[
-        ["warm neutral", "#ead8b9"],
-        ["olive and cream", "#78865b"],
-        ["blue gray", "#4f6f7f"],
-        ["soft gray", "#9ea5a9"],
-        ["charcoal", "#3b3d40"],
-      ]
-        .map(
-          ([value, color], index) => `
+            ["warm neutral", "#ead8b9"],
+            ["olive and cream", "#78865b"],
+            ["blue gray", "#4f6f7f"],
+            ["soft gray", "#9ea5a9"],
+            ["charcoal", "#3b3d40"],
+          ]
+            .map(
+              ([value, color], index) => `
                 <label class="aim-color-swatch ${index === 0 ? "is-active" : ""}">
                   <input type="radio" name="ai-color-palette" value="${escapeHtml(value)}" data-ai-option data-ai-option-name="Color Palette" data-ai-option-prompt="Color palette" ${index === 0 ? "checked" : ""}>
                   <span style="--aim-swatch:${escapeHtml(color)}"></span>
                 </label>`,
-        )
-        .join("")}
+            )
+            .join("")}
         </div>
       </fieldset>
       <fieldset class="aim-option-fieldset">
         <legend>Aspect Ratio</legend>
         <div class="aim-aspect-options">
           ${[
-        ["1:1", "Square"],
-        ["4:3", "Classic"],
-        ["3:2", "Landscape"],
-        ["16:9", "Wide"],
-        ["9:16", "Portrait"],
-      ]
-        .map(
-          ([value, label], index) => `
+            ["1:1", "Square"],
+            ["4:3", "Classic"],
+            ["3:2", "Landscape"],
+            ["16:9", "Wide"],
+            ["9:16", "Portrait"],
+          ]
+            .map(
+              ([value, label], index) => `
                 <label class="aim-aspect-option ${index === 0 ? "is-active" : ""}">
                   <input type="radio" name="ai-aspect-ratio" value="${escapeHtml(value)}" data-ai-option data-ai-option-name="Aspect Ratio" data-ai-option-prompt="Aspect ratio" ${index === 0 ? "checked" : ""}>
                   <span>${escapeHtml(value)}</span>
                   <small>${escapeHtml(label)}</small>
                 </label>`,
-        )
-        .join("")}
+            )
+            .join("")}
         </div>
       </fieldset>
     `;
@@ -1414,11 +1472,11 @@
     const promptIdeas = (templates || []).length
       ? templates
       : [
-        "Serene mountain retreat with soft morning light",
-        "Minimal gallery wall with neutral botanical artwork",
-        "Warm living room artwork in earthy tones",
-        "Coastal abstract print with calm natural colors",
-      ];
+          "Serene mountain retreat with soft morning light",
+          "Minimal gallery wall with neutral botanical artwork",
+          "Warm living room artwork in earthy tones",
+          "Coastal abstract print with calm natural colors",
+        ];
     root.innerHTML = promptIdeas
       .map(
         (template) =>
@@ -1544,7 +1602,8 @@
       const msg =
         options && options.mode === "user"
           ? "No generated AI images yet."
-          : options && (options.mode === "inspiration" || options.mode === "pinterest")
+          : options &&
+              (options.mode === "inspiration" || options.mode === "pinterest")
             ? "Generate your first artwork to see it here."
             : "No approved AI images yet.";
       return `<p class="aim-empty">${msg}</p>`;
@@ -1574,8 +1633,8 @@
         );
         const creator = escapeHtml(
           lead.customer?.displayName ||
-          lead.customer?.email?.split("@")[0] ||
-          "orvella.creator",
+            lead.customer?.email?.split("@")[0] ||
+            "orvella.creator",
         );
         const creatorId = escapeHtml(
           lead.customer?.shopifyCustomerId || lead.customerId || "",
@@ -1595,13 +1654,13 @@
             </div>
             <div class="aim-moodboard-card__mosaic aim-moodboard-card__mosaic--${mosaicCount}">
               ${group
-            .slice(0, 4)
-            .map(
-              (image, index) => `
+                .slice(0, 4)
+                .map(
+                  (image, index) => `
                     <img class="aim-moodboard-card__image-${index + 1}" src="${escapeHtml(toProxyImageUrl(image.imageUrl))}" alt="${escapeHtml(displayPrompt(image) || "Generated artwork")}" loading="lazy">
                   `,
-            )
-            .join("")}
+                )
+                .join("")}
             </div>
             <div class="aim-moodboard-card__meta">
               <strong>${title}</strong>
@@ -1657,7 +1716,10 @@
   }
 
   function renderCommunityBadge(image) {
-    if (image.visibility === "PUBLIC" && image.moderationStatus === "APPROVED") {
+    if (
+      image.visibility === "PUBLIC" &&
+      image.moderationStatus === "APPROVED"
+    ) {
       return '<span class="aim-image-badge aim-image-badge--live">Live in community</span>';
     }
     if (image.visibility === "PUBLIC" && image.moderationStatus === "PENDING") {
@@ -1708,7 +1770,12 @@
   }
 
   function creatorInitial(name) {
-    return String(name || "O").trim().charAt(0).toUpperCase() || "O";
+    return (
+      String(name || "O")
+        .trim()
+        .charAt(0)
+        .toUpperCase() || "O"
+    );
   }
 
   function renderUserPublicAction(image) {
@@ -1815,7 +1882,11 @@
       }
 
       if (action === "details" || card.dataset.aiCardAction === "details") {
-        if (event.target.closest(".aim-inspiration-card__actions") && action !== "details") return;
+        if (
+          event.target.closest(".aim-inspiration-card__actions") &&
+          action !== "details"
+        )
+          return;
         const button = actionEl?.tagName === "BUTTON" ? actionEl : null;
         const task = async () => {
           const studioConfig = await fetchStudioConfig(root);
@@ -1875,13 +1946,17 @@
     const selectButton = generatorRoot.querySelector("[data-ai-select]");
     const textarea = generatorRoot.querySelector("[data-ai-prompt]");
     let variants = [];
-    if (generatorRoot._draftVariants && generatorRoot._draftVariants.length >= 2) {
+    if (
+      generatorRoot._draftVariants &&
+      generatorRoot._draftVariants.length >= 2
+    ) {
       const generated = generatorRoot._draftVariants.slice(0, 2);
       variants = [...generated, image];
     } else {
       variants = image.groupedImages?.length ? image.groupedImages : [image];
     }
-    const currentSelections = generatorRoot._finalSelections || defaultFinalSelections();
+    const currentSelections =
+      generatorRoot._finalSelections || defaultFinalSelections();
     const nextImage = mergeImageFinalSelections(image, currentSelections);
     generatorRoot._userEditing = true;
     if (selectButton) selectButton.hidden = false;
@@ -1893,7 +1968,11 @@
     toggleGeneratorImageSections(generatorRoot, true);
     if (preview) {
       applyPreviewPresentation(preview, currentSelections);
-      await renderGeneratedPreview(preview, image.imageUrl, displayPrompt(image)).catch((err) => {
+      await renderGeneratedPreview(
+        preview,
+        image.imageUrl,
+        displayPrompt(image),
+      ).catch((err) => {
         console.warn("Preview image load failed", err);
       });
     }
@@ -1939,10 +2018,8 @@
 
       if (action === "preview") {
         generatorRoot._userEditing = true;
-        await withButtonLoading(
-          actionEl,
-          "Loading preview...",
-          () => applyImageToGenerator(generatorRoot, image),
+        await withButtonLoading(actionEl, "Loading preview...", () =>
+          applyImageToGenerator(generatorRoot, image),
         );
         return;
       }
@@ -1998,9 +2075,10 @@
   }
 
   async function renderInlineImageDetails({ root, image, studioConfig }) {
-    const groupedImages = Array.isArray(image.groupedImages) && image.groupedImages.length
-      ? image.groupedImages
-      : [image];
+    const groupedImages =
+      Array.isArray(image.groupedImages) && image.groupedImages.length
+        ? image.groupedImages
+        : [image];
     const initialImage = image || groupedImages[0];
     let activeImage = initialImage;
     const prompt = escapeHtml(displayPrompt(activeImage));
@@ -2009,8 +2087,8 @@
     );
     const creator = escapeHtml(
       activeImage.customer?.displayName ||
-      activeImage.customer?.email?.split("@")[0] ||
-      "Community member",
+        activeImage.customer?.email?.split("@")[0] ||
+        "Community member",
     );
     let detail = root.querySelector("[data-ai-community-detail]");
     if (!detail) {
@@ -2027,9 +2105,15 @@
       detail.scrollIntoView({ behavior: "smooth", block: "start" });
     });
     detail.dataset.aiActiveImageId = activeImage.id;
-    const isOwnImage = !!root.closest("[data-ai-user-images]") || 
-      (root.dataset.customerId && String(image.customerId) === String(root.dataset.customerId)) ||
-      (root.dataset.customerId && image.customer?.shopifyCustomerId && String(image.customer.shopifyCustomerId).includes(String(root.dataset.customerId)));
+    const isOwnImage =
+      !!root.closest("[data-ai-user-images]") ||
+      (root.dataset.customerId &&
+        String(image.customerId) === String(root.dataset.customerId)) ||
+      (root.dataset.customerId &&
+        image.customer?.shopifyCustomerId &&
+        String(image.customer.shopifyCustomerId).includes(
+          String(root.dataset.customerId),
+        ));
 
     const optionGroups = studioConfig?.optionGroups || [];
 
@@ -2051,14 +2135,15 @@
           <p class="aim-modal__meta">@${creator}</p>
           <p class="aim-modal__prompt" data-ai-detail-prompt>${prompt}</p>
           <p class="aim-modal__options" data-ai-detail-options>${options}</p>
-          ${optionGroups.length
-        ? `<div class="aim-modal__pickers">
+          ${
+            optionGroups.length
+              ? `<div class="aim-modal__pickers">
                   ${optionGroups
-          .map((group) => {
-            const values = Array.isArray(group.values)
-              ? group.values
-              : [];
-            return `
+                    .map((group) => {
+                      const values = Array.isArray(group.values)
+                        ? group.values
+                        : [];
+                      return `
                         <label>
                           <span>${escapeHtml(group.name)}</span>
                           <select data-ai-community-option data-ai-option-name="${escapeHtml(group.name)}">
@@ -2066,15 +2151,17 @@
                           </select>
                         </label>
                       `;
-          })
-          .join("")}
+                    })
+                    .join("")}
                 </div>`
-        : ""
-      }
+              : ""
+          }
           <div class="aim-modal__actions">
             <button type="button" class="aim-button aim-button--outline" data-ai-detail-action="use">${useBtnLabel}</button>
             <button type="button" class="aim-button aim-button--filled" data-ai-detail-action="regenerate">Regenerate similar</button>
-            ${isOwnImage ? `
+            ${
+              isOwnImage
+                ? `
               <button type="button" class="aim-button aim-button--outline" data-ai-detail-action="download" style="grid-column: span 2; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -2083,12 +2170,15 @@
                 </svg>
                 Download Artwork
               </button>
-            ` : ""}
+            `
+                : ""
+            }
           </div>
         </div>
       </div>
-      ${groupedImages.length > 1
-        ? `<section class="aim-creator-gallery">
+      ${
+        groupedImages.length > 1
+          ? `<section class="aim-creator-gallery">
               <div class="aim-section-head">
                 <div>
                   <p class="aim-eyebrow">All artworks</p>
@@ -2097,17 +2187,17 @@
               </div>
               <div class="aim-creator-gallery__grid" data-ai-creator-grid>
                 ${groupedImages
-          .map(
-            (item, index) => `
+                  .map(
+                    (item, index) => `
                       <button type="button" class="aim-creator-gallery__item ${item.id === activeImage.id ? "is-active" : ""}" data-ai-creator-index="${index}" aria-label="Preview artwork ${index + 1}">
                         <img src="${escapeHtml(toProxyImageUrl(item.imageUrl))}" alt="${escapeHtml(displayPrompt(item) || "Generated artwork")}" loading="lazy">
                       </button>
                     `,
-          )
-          .join("")}
+                  )
+                  .join("")}
               </div>
             </section>`
-        : ""
+          : ""
       }
       <section class="aim-detail-reviews">
         <div class="aim-section-head">
@@ -2132,16 +2222,18 @@
       </section>
     `;
 
-    fetchImageReviews(root, activeImage.id).then((reviews) => {
-      renderReviewPage(detail, reviews, 0);
-    }).catch(() => {
-      renderReviewPage(detail, [], 0);
-    });
+    fetchImageReviews(root, activeImage.id)
+      .then((reviews) => {
+        renderReviewPage(detail, reviews, 0);
+      })
+      .catch(() => {
+        renderReviewPage(detail, [], 0);
+      });
 
     window.requestAnimationFrame(() => {
       detail.scrollIntoView({ behavior: "smooth", block: "start" });
     });
- 
+
     detail
       .querySelector("[data-ai-detail-back]")
       ?.addEventListener("click", () => {
@@ -2190,7 +2282,8 @@
         if (title) title.textContent = shortTitle(displayPrompt(next));
         if (promptText) promptText.textContent = displayPrompt(next);
         if (optionsText)
-          optionsText.textContent = selectedOptionsText(next) || "No options saved";
+          optionsText.textContent =
+            selectedOptionsText(next) || "No options saved";
 
         const reviewList = detail.querySelector("[data-ai-detail-review-list]");
         if (reviewList) {
@@ -2206,9 +2299,13 @@
         const fileName = `${activeImage.id || "artwork"}.png`;
         const imageUrl = activeImage.imageUrl;
         if (imageUrl) {
-          await withButtonLoading(event.currentTarget, "Downloading...", async () => {
-            await downloadImage(imageUrl, fileName);
-          });
+          await withButtonLoading(
+            event.currentTarget,
+            "Downloading...",
+            async () => {
+              await downloadImage(imageUrl, fileName);
+            },
+          );
         }
       });
     detail
@@ -2217,9 +2314,13 @@
         const generator = document.querySelector("[data-ai-image-generator]");
         if (generator) {
           generator._userEditing = true;
-          await withButtonLoading(event.currentTarget, "Loading...", async () => {
-            await applyImageToGenerator(generator, image);
-          });
+          await withButtonLoading(
+            event.currentTarget,
+            "Loading...",
+            async () => {
+              await applyImageToGenerator(generator, image);
+            },
+          );
           resetGalleryDetail(root, detail);
           return;
         }
@@ -2336,7 +2437,9 @@
     const status = root.querySelector("[data-ai-status]");
     const selectButton = root.querySelector("[data-ai-select]");
     const generateButton = root.querySelector("[data-ai-generate]");
-    const thumbsContainer = root.querySelector("[data-ai-draft-thumbs-container]");
+    const thumbsContainer = root.querySelector(
+      "[data-ai-draft-thumbs-container]",
+    );
     if (preview) {
       preview.classList.remove("is-loading");
       preview.innerHTML = emptyPreviewStateHtml(root);
@@ -2520,8 +2623,8 @@
     );
     const creator = escapeHtml(
       image.customer?.displayName ||
-      image.customer?.email ||
-      "Community member",
+        image.customer?.email ||
+        "Community member",
     );
     const modal = document.createElement("div");
     modal.className = "aim-modal";
@@ -2534,14 +2637,15 @@
         <p class="aim-modal__meta">${creator}</p>
         <p class="aim-modal__prompt">${prompt}</p>
         <p class="aim-modal__options">${options}</p>
-        ${optionGroups.length
-        ? `<div class="aim-modal__pickers">
+        ${
+          optionGroups.length
+            ? `<div class="aim-modal__pickers">
                 ${optionGroups
-          .map((group) => {
-            const values = Array.isArray(group.values)
-              ? group.values
-              : [];
-            return `
+                  .map((group) => {
+                    const values = Array.isArray(group.values)
+                      ? group.values
+                      : [];
+                    return `
                       <label>
                         <span>${escapeHtml(group.name)}</span>
                         <select data-ai-community-option data-ai-option-name="${escapeHtml(group.name)}">
@@ -2549,17 +2653,18 @@
                         </select>
                       </label>
                     `;
-          })
-          .join("")}
+                  })
+                  .join("")}
               </div>`
-        : ""
-      }
+            : ""
+        }
         <div class="aim-modal__actions">
           <button type="button" class="aim-button  aim-button--outline" data-ai-modal-action="use">Use this image</button>
           <button type="button" class="aim-button aim-button--filled" data-ai-modal-action="regenerate">Regenerate</button>
         </div>
-        ${root.dataset.customerId
-        ? `<form class="aim-modal__review" data-ai-modal-review>
+        ${
+          root.dataset.customerId
+            ? `<form class="aim-modal__review" data-ai-modal-review>
                 <strong>Add a review</strong>
                 <select name="rating">
                   <option value="5">5 stars</option>
@@ -2572,8 +2677,8 @@
                 <button type="submit" class="aim-button aim-button--primary">Submit review</button>
                 <p class="aim-status" data-ai-modal-review-status></p>
               </form>`
-        : ""
-      }
+            : ""
+        }
       </div>
     `;
     modal
@@ -2714,7 +2819,9 @@
   }) {
     const sizePlaceholder = root.querySelector("[data-ai-size-placeholder]");
     const framePlaceholder = root.querySelector("[data-ai-frame-placeholder]");
-    const thumbsContainer = root.querySelector("[data-ai-draft-thumbs-container]");
+    const thumbsContainer = root.querySelector(
+      "[data-ai-draft-thumbs-container]",
+    );
     const selectButton = root.querySelector("[data-ai-select]");
 
     if (!selectedImage) return;
@@ -2733,10 +2840,10 @@
     if (sizePlaceholder) {
       sizePlaceholder.innerHTML = `
         ${renderEditorSelect("orientation", current.orientation, [
-        { value: "landscape", label: "Landscape" },
-        { value: "portrait", label: "Portrait" },
-        { value: "square", label: "Square" },
-      ])}
+          { value: "landscape", label: "Landscape" },
+          { value: "portrait", label: "Portrait" },
+          { value: "square", label: "Square" },
+        ])}
         ${renderEditorSelect("size", current.size, sizeEditorOptions(current.orientation))}
       `;
     }
@@ -2754,45 +2861,47 @@
       thumbsContainer.innerHTML = `
         <div class="aim-draft-editor__variants aim-draft-masonry">
           ${(variants || [])
-          .slice(0, 5)
-          .map(
-            (variant, index) => `
+            .slice(0, 5)
+            .map(
+              (variant, index) => `
                 <button type="button" class="aim-draft-thumb ${variant.imageUrl === selectedUrl ? "is-active" : ""}" data-ai-draft-index="${index}" aria-label="Draft ${index + 1}">
                   <img src="${escapeHtml(toProxyImageUrl(variant.imageUrl))}" alt="Draft ${index + 1}">
                 </button>
               `,
-          )
-          .join("")}
+            )
+            .join("")}
         </div>
       `;
 
-      thumbsContainer.querySelectorAll("[data-ai-draft-index]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const nextVariant = variants[Number(button.dataset.aiDraftIndex)];
-          if (!nextVariant) return;
-          const nextImage = mergeImageFinalSelections(nextVariant, current);
-          setSelectedImage?.(nextImage);
-          await renderGeneratedPreview(preview, nextImage.imageUrl, prompt);
-          highlightPreview(preview);
-          storePreview(root, {
-            generation: nextImage,
-            variants,
-            image: nextImage.imageUrl,
-            prompt,
-          });
-          renderDraftEditor({
-            root,
-            variants,
-            selectedImage: nextImage,
-            finalSelections: current,
-            preview,
-            prompt,
-            editorOptions,
-            setSelectedImage,
-            setFinalSelections,
+      thumbsContainer
+        .querySelectorAll("[data-ai-draft-index]")
+        .forEach((button) => {
+          button.addEventListener("click", async () => {
+            const nextVariant = variants[Number(button.dataset.aiDraftIndex)];
+            if (!nextVariant) return;
+            const nextImage = mergeImageFinalSelections(nextVariant, current);
+            setSelectedImage?.(nextImage);
+            await renderGeneratedPreview(preview, nextImage.imageUrl, prompt);
+            highlightPreview(preview);
+            storePreview(root, {
+              generation: nextImage,
+              variants,
+              image: nextImage.imageUrl,
+              prompt,
+            });
+            renderDraftEditor({
+              root,
+              variants,
+              selectedImage: nextImage,
+              finalSelections: current,
+              preview,
+              prompt,
+              editorOptions,
+              setSelectedImage,
+              setFinalSelections,
+            });
           });
         });
-      });
     }
 
     // 4. Bind reset action once
@@ -2806,8 +2915,12 @@
 
     // 5. Bind control changes inside placeholders
     const controls = [
-      ...(sizePlaceholder ? sizePlaceholder.querySelectorAll("[data-ai-select-control]") : []),
-      ...(framePlaceholder ? framePlaceholder.querySelectorAll("[data-ai-select-control]") : []),
+      ...(sizePlaceholder
+        ? sizePlaceholder.querySelectorAll("[data-ai-select-control]")
+        : []),
+      ...(framePlaceholder
+        ? framePlaceholder.querySelectorAll("[data-ai-select-control]")
+        : []),
     ];
 
     controls.forEach((input) => {
@@ -2863,16 +2976,16 @@
         <span>${escapeHtml(editorOptionGroupLabel(name))}</span>
         <div class="aim-segment-group" data-ai-segment-group="${escapeHtml(name)}">
           ${options
-        .map((option) => {
-          const optionValue = option.value;
-          const label = option.label || labelize(optionValue);
-          return `
+            .map((option) => {
+              const optionValue = option.value;
+              const label = option.label || labelize(optionValue);
+              return `
                 <button type="button" class="aim-segment ${optionValue === value ? "is-active" : ""}" data-ai-segment="${escapeHtml(name)}" data-ai-value="${escapeHtml(optionValue)}">
                   ${escapeHtml(label)}
                 </button>
               `;
-        })
-        .join("")}
+            })
+            .join("")}
         </div>
       </div>
     `;
@@ -2884,11 +2997,11 @@
         <span>${escapeHtml(editorOptionGroupLabel(name))}</span>
         <select data-ai-select-control="${escapeHtml(name)}">
           ${options
-        .map(
-          (option) =>
-            `<option value="${escapeHtml(option.value)}" ${option.value === value ? "selected" : ""}>${escapeHtml(option.label || labelize(option.value))}</option>`,
-        )
-        .join("")}
+            .map(
+              (option) =>
+                `<option value="${escapeHtml(option.value)}" ${option.value === value ? "selected" : ""}>${escapeHtml(option.label || labelize(option.value))}</option>`,
+            )
+            .join("")}
         </select>
       </label>
     `;
@@ -2977,7 +3090,7 @@
       ...groups.free,
       ...groups.square,
       ...groups.portrait,
-      ...groups.landscape
+      ...groups.landscape,
     ];
   }
 
@@ -3069,11 +3182,14 @@
     root.classList.toggle("is-draft-screen", step === "editor");
     root.classList.toggle("is-editor-screen", step === "editor");
     root.classList.toggle("is-prompt-screen", step === "prompt");
+    syncPromptShowcase(root);
 
     const returnBtn = root.querySelector("[data-ai-return-editor]");
     const actionsContainer = root.querySelector(".aim-actions");
     if (returnBtn) {
-      const showReturn = step === "prompt" && (root._selectedImage || root._draftVariants?.length);
+      const showReturn =
+        step === "prompt" &&
+        (root._selectedImage || root._draftVariants?.length);
       if (showReturn) {
         returnBtn.style.display = "";
         returnBtn.hidden = false;
@@ -3083,6 +3199,29 @@
         returnBtn.hidden = true;
         actionsContainer?.classList.remove("has-return-btn");
       }
+    }
+  }
+
+  function syncPromptShowcase(root) {
+    if (!root) return;
+    const image = root.querySelector("[data-ai-prompt-showcase-image]");
+    const editButton = root.querySelector("[data-ai-edit-preview]");
+    const selected = root._selectedImage || root._draftVariants?.[0] || null;
+    const imageUrl =
+      selected?.imageUrl || selected?.pendingImage?.imageUrl || "";
+
+    if (image && imageUrl) {
+      image.src = toProxyImageUrl(imageUrl);
+      root.classList.add("has-prompt-preview");
+    } else if (image && root.dataset.aiDefaultPromptPreview) {
+      image.src = root.dataset.aiDefaultPromptPreview;
+      root.classList.remove("has-prompt-preview");
+    } else {
+      root.classList.toggle("has-prompt-preview", !!imageUrl);
+    }
+
+    if (editButton) {
+      editButton.hidden = !selected;
     }
   }
 

@@ -285,12 +285,35 @@ export async function clonePoolImageToUniqueFile(poolImageUrl) {
   const fs = await import("node:fs/promises");
   const path = await import("node:path");
   const crypto = await import("node:crypto");
-  const sourcePath = path.join(process.cwd(), "public", "ai-generated", filename);
+  const uploadDir = path.join(process.cwd(), "public", "ai-generated");
+  let sourcePath = path.join(uploadDir, filename);
+  try {
+    await fs.access(sourcePath);
+  } catch {
+    const fallbackFiles = [
+      "ai-1780375616027-825dbe7f4b9e.png",
+      "ai-1780377295119-733654541932.png",
+      "ai-1780377801685-455a9467f9fc.png",
+    ];
+    let fallback = "";
+    for (const file of fallbackFiles) {
+      try {
+        await fs.access(path.join(uploadDir, file));
+        fallback = file;
+        break;
+      } catch {
+        // Try the next bundled test image.
+      }
+    }
+    if (!fallback) {
+      throw new Error("No test draft image is available.");
+    }
+    sourcePath = path.join(uploadDir, fallback);
+  }
   const buffer = await fs.readFile(sourcePath);
-  const extension = filename.split(".").pop() || "jpg";
+  const extension = sourcePath.split(".").pop() || "jpg";
   const token = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
   const nextFilename = `ai-${Date.now()}-${token}.${extension}`;
-  const uploadDir = path.join(process.cwd(), "public", "ai-generated");
 
   await fs.mkdir(uploadDir, { recursive: true });
   await fs.writeFile(path.join(uploadDir, nextFilename), buffer);
