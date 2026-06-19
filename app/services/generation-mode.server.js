@@ -13,10 +13,17 @@ const DEFAULT_TEST_IMAGES = [
 ];
 
 export function testImageUrl(index = 0) {
-  const configuredUrls = String(process.env.TEST_IMAGE_URLS || "")
+  if (index === 0 && process.env.DRAFT_IMAGE_1) {
+    return process.env.DRAFT_IMAGE_1;
+  }
+  if (index === 1 && process.env.DRAFT_IMAGE_2) {
+    return process.env.DRAFT_IMAGE_2;
+  }
+  const configuredUrls = String(process.env.TEST_IMAGE_URLS || process.env.TEST_IMAGE_URL || "")
     .split(",")
     .map((url) => url.trim())
     .filter(Boolean);
   const urls = configuredUrls.length ? configuredUrls : DEFAULT_TEST_IMAGES;
   return urls[Math.abs(index) % urls.length];
 }
+

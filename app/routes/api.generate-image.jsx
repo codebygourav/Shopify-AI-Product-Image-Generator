@@ -29,13 +29,18 @@ export async function action({ request }) {
       customerId,
       customerEmail,
       visibility = "PRIVATE",
-      draftCount = 2,
+      draftCount: requestDraftCount,
       draftQuality = "low",
       draftSize = "1024x1024",
       generationType = "draft",
       apiBase,
       shop: shopFromBody,
     } = body;
+
+    const draftCount = requestDraftCount !== undefined
+      ? Number(requestDraftCount)
+      : (process.env.DRAFT_COUNT ? Number(process.env.DRAFT_COUNT) : 1);
+
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length < 3) {
       return corsJson({ success: false, error: "Prompt is required." });
@@ -83,30 +88,30 @@ export async function action({ request }) {
     const shop = adminClient
       ? await getOrCreateShop(adminClient, shopDomain)
       : {
-          id: shopDomain,
-          shop: shopDomain,
-          settings: JSON.stringify(defaultShopSettings()),
-        };
+        id: shopDomain,
+        shop: shopDomain,
+        settings: JSON.stringify(defaultShopSettings()),
+      };
     const settings = parseShopSettings(shop.settings);
     const customer = adminClient
       ? await getOrCreateCustomer({
-          admin: adminClient,
-          shopId: shop.id,
-          shopifyCustomerId: cleanId,
-          email: cleanEmail,
-        })
+        admin: adminClient,
+        shopId: shop.id,
+        shopifyCustomerId: cleanId,
+        email: cleanEmail,
+      })
       : cleanId
         ? {
-            id: cleanId,
-            shopId: shop.id,
-            shopifyCustomerId: cleanId,
-            email: cleanEmail || null,
-            displayName: cleanEmail
-              ? cleanEmail.split("@")[0]
-              : "Customer",
-            isApproved: true,
-            generationLimit: null,
-          }
+          id: cleanId,
+          shopId: shop.id,
+          shopifyCustomerId: cleanId,
+          email: cleanEmail || null,
+          displayName: cleanEmail
+            ? cleanEmail.split("@")[0]
+            : "Customer",
+          isApproved: true,
+          generationLimit: null,
+        }
         : null;
 
     if (customer?.isApproved === false) {
@@ -133,9 +138,9 @@ export async function action({ request }) {
 
     const optionSummary = Array.isArray(selectedOptions)
       ? selectedOptions
-          .filter((option) => option?.name && option?.value)
-          .map((option) => `${option.name}: ${option.value}`)
-          .join(", ")
+        .filter((option) => option?.name && option?.value)
+        .map((option) => `${option.name}: ${option.value}`)
+        .join(", ")
       : "";
     const studioPrompt = [
       prompt.trim(),
@@ -168,88 +173,98 @@ export async function action({ request }) {
       "https://shopify-ai.deploymeta.com";
     const draftVariants = await Promise.all(
       draftImages.map(async (image, index) => {
-        const previewImage =
-          image.mode === "instant-draft"
-            ? await clonePoolImageToUniqueFile(image.imageUrl)
-            : image.mode === "test"
-              ? await clonePoolImageToUniqueFile(image.imageUrl)
-              : await saveGeneratedImageToPublicUrl({
-                imageUrl: image.imageUrl,
-                base64Data: image.base64Data,
-                mimeType: image.mimeType,
-                publicBaseUrl,
-              });
-
-        if (!previewImage || previewImage.startsWith("data:")) {
-          throw new Error(
-            "Generated image could not be converted to a preview image URL.",
-          );
-        }
-
-        const storefrontPreviewImage = storefrontImageUrl(
-          previewImage,
-          apiBase,
-        );
-        const metadata = {
-          productHandle,
-          variantId,
-          variantTitle,
-          selectedOptions,
-          originalPrompt: originalPrompt || prompt.trim(),
-          generationMode: image.mode,
-          generationType,
-          draft: true,
-          draftIndex: index + 1,
-          draftQuality: image.quality || draftQuality,
-          draftSize: image.size || draftSize,
-          watermarkText,
-          finalSelections: {
-            orientation: "square",
-            frame: "none",
-            frameColor: "black",
-            effect: "none",
-          },
-        };
-
-        const variantData = {
-          prompt: studioPrompt,
-          status: "COMPLETED",
-          visibility: "PRIVATE",
-          moderationStatus: "APPROVED",
-          productId,
-          productHandle,
-          variantId,
-          variantTitle,
-          customerId: customer?.shopifyCustomerId || cleanId || null,
-          customerEmail: cleanEmail,
-          imageUrl: storefrontPreviewImage,
-          openAiRequestId: image.requestId,
-          watermarkText,
-          metadata: JSON.stringify(metadata),
-          pendingImage: {
-            imageUrl: storefrontPreviewImage,
-            mimeType: image.mimeType,
-          },
-        };
-
-        let savedRecord = null;
         try {
-          savedRecord = await saveDraftGenerationRecord({
-            shopDomain,
-            shopId: shop.id,
-            customerId: customer?.shopifyCustomerId || cleanId,
+          const previewImage =
+            image.mode === "instant-draft"
+              ? await clonePoolImageToUniqueFile(image.imageUrl)
+              : image.mode === "test"
+                ? await clonePoolImageToUniqueFile(image.imageUrl)
+                : await saveGeneratedImageToPublicUrl({
+                  imageUrl: image.imageUrl,
+                  base64Data: image.base64Data,
+                  mimeType: image.mimeType,
+                  publicBaseUrl,
+                });
+
+          if (!previewImage || previewImage.startsWith("data:")) {
+            throw new Error(
+              "Generated image could not be converted to a preview image URL.",
+            );
+          }
+
+          const storefrontPreviewImage = storefrontImageUrl(
+            previewImage,
+            apiBase,
+          );
+          const metadata = {
+            productHandle,
+            variantId,
+            variantTitle,
+            selectedOptions,
+            originalPrompt: originalPrompt || prompt.trim(),
+            generationMode: image.mode,
+            generationType,
+            draft: true,
+            draftIndex: index + 1,
+            draftQuality: image.quality || draftQuality,
+            draftSize: image.size || draftSize,
+            watermarkText,
+            finalSelections: {
+              orientation: "square",
+              frame: "none",
+              frameColor: "black",
+              effect: "none",
+            },
+          };
+
+          const variantData = {
+            prompt: studioPrompt,
+            status: "COMPLETED",
+            visibility: "PRIVATE",
+            moderationStatus: "APPROVED",
+            productId,
+            productHandle,
+            variantId,
+            variantTitle,
+            customerId: customer?.shopifyCustomerId || cleanId || null,
             customerEmail: cleanEmail,
-            variantData,
+            imageUrl: storefrontPreviewImage,
+            openAiRequestId: image.requestId,
+            watermarkText,
+            metadata: JSON.stringify(metadata),
+            pendingImage: {
+              imageUrl: storefrontPreviewImage,
+              mimeType: image.mimeType,
+            },
+          };
+
+          let savedRecord = null;
+          try {
+            savedRecord = await saveDraftGenerationRecord({
+              shopDomain,
+              shopId: shop.id,
+              customerId: customer?.shopifyCustomerId || cleanId,
+              customerEmail: cleanEmail,
+              variantData,
+            });
+          } catch (saveError) {
+            console.error("Draft save failed", saveError);
+          }
+
+          if (savedRecord) {
+            return { ...variantData, id: savedRecord.id, customer: savedRecord.customer };
+          }
+
+          return variantData;
+        } catch (draftError) {
+          console.error("Draft variant processing error", {
+            imageMode: image.mode,
+            imageUrl: image.imageUrl,
+            error: draftError.message,
+            stack: draftError.stack,
           });
-        } catch (saveError) {
-          console.error("Draft save failed", saveError);
+          throw draftError;
         }
-
-        if (savedRecord) {
-          return { ...variantData, id: savedRecord.id, customer: savedRecord.customer };
-        }
-
-        return variantData;
       }),
     );
 
@@ -285,105 +300,105 @@ export async function action({ request }) {
       error: error.message,
     });
   }
-    function isMissingShopifySessionError(error) {
-      return String(error?.message || error).includes("Could not find a session");
+  function isMissingShopifySessionError(error) {
+    return String(error?.message || error).includes("Could not find a session");
+  }
+
+  function storefrontImageUrl(imageUrl, apiBase) {
+    const filename = String(imageUrl || "").match(
+      /\/ai-generated\/([^/?#]+\.(?:png|jpe?g|webp))/i,
+    )?.[1];
+    if (!filename) return imageUrl;
+
+    const base = String(apiBase || "/apps/ai-image")
+      .trim()
+      .replace(/\/$/, "");
+    if (!base || /^https?:\/\/localhost(?::|\/|$)/i.test(base)) {
+      return `/apps/ai-image/ai-generated/${filename}`;
     }
 
-    function storefrontImageUrl(imageUrl, apiBase) {
-      const filename = String(imageUrl || "").match(
-        /\/ai-generated\/([^/?#]+\.(?:png|jpe?g|webp))/i,
-      )?.[1];
-      if (!filename) return imageUrl;
-
-      const base = String(apiBase || "/apps/ai-image")
-        .trim()
-        .replace(/\/$/, "");
-      if (!base || /^https?:\/\/localhost(?::|\/|$)/i.test(base)) {
-        return `/apps/ai-image/ai-generated/${filename}`;
-      }
-
-      if (/^https?:\/\//i.test(base)) {
-        const url = new URL(base);
-        const pathname = url.pathname.replace(/\/api\/?$/i, "");
-        return `${url.origin}${pathname}/ai-generated/${filename}`;
-      }
-
-      return `${base}/ai-generated/${filename}`;
+    if (/^https?:\/\//i.test(base)) {
+      const url = new URL(base);
+      const pathname = url.pathname.replace(/\/api\/?$/i, "");
+      return `${url.origin}${pathname}/ai-generated/${filename}`;
     }
 
-    async function saveDraftGenerationRecord({
-      shopDomain,
-      shopId,
-      customerId,
-      customerEmail,
-      variantData,
-    }) {
-      let shop = await db.shop.findUnique({ where: { shop: shopDomain } });
-      if (!shop) {
-        shop = await db.shop.create({
-          data: { shop: shopDomain, settings: "{}" },
-        });
-      }
+    return `${base}/ai-generated/${filename}`;
+  }
 
-      const numericId = customerId
-        ? String(customerId).match(/Customer\/([^/]+)$/)?.[1] || String(customerId)
-        : null;
+  async function saveDraftGenerationRecord({
+    shopDomain,
+    shopId,
+    customerId,
+    customerEmail,
+    variantData,
+  }) {
+    let shop = await db.shop.findUnique({ where: { shop: shopDomain } });
+    if (!shop) {
+      shop = await db.shop.create({
+        data: { shop: shopDomain, settings: "{}" },
+      });
+    }
 
-      let dbCustomer = null;
-      if (numericId || customerEmail) {
-        dbCustomer = await db.customerAccount.findFirst({
-          where: {
-            shopId: shop.id,
-            OR: [
-              ...(numericId ? [{ shopifyCustomerId: numericId }] : []),
-              ...(customerEmail ? [{ email: customerEmail }] : []),
-            ],
-          },
-        });
+    const numericId = customerId
+      ? String(customerId).match(/Customer\/([^/]+)$/)?.[1] || String(customerId)
+      : null;
 
-        if (!dbCustomer && numericId) {
-          dbCustomer = await db.customerAccount.create({
-            data: {
-              shopId: shop.id,
-              shopifyCustomerId: numericId,
-              email: customerEmail || null,
-              displayName: customerEmail ? customerEmail.split("@")[0] : "Customer",
-            },
-          });
-        }
-      }
-
-      const generation = await db.aiImageGeneration.create({
-        data: {
+    let dbCustomer = null;
+    if (numericId || customerEmail) {
+      dbCustomer = await db.customerAccount.findFirst({
+        where: {
           shopId: shop.id,
-          customerId: dbCustomer?.id || null,
-          productId: variantData.productId || null,
-          productHandle: variantData.productHandle || null,
-          variantId: variantData.variantId || null,
-          variantTitle: variantData.variantTitle || null,
-          prompt: variantData.prompt || "",
-          imageUrl: variantData.imageUrl || null,
-          status: "COMPLETED",
-          visibility: "PRIVATE",
-          moderationStatus: "APPROVED",
-          watermarkText: variantData.watermarkText || "orvellastudio.com",
-          openAiRequestId: variantData.openAiRequestId || null,
-          metadata: variantData.metadata || "{}",
-          selectedForCart: false,
+          OR: [
+            ...(numericId ? [{ shopifyCustomerId: numericId }] : []),
+            ...(customerEmail ? [{ email: customerEmail }] : []),
+          ],
         },
-        include: { customer: true },
       });
 
-      return {
-        id: generation.id,
-        customer: generation.customer
-          ? {
-              id: generation.customer.id,
-              shopifyCustomerId: generation.customer.shopifyCustomerId,
-              email: generation.customer.email,
-              displayName: generation.customer.displayName,
-            }
-          : null,
-      };
+      if (!dbCustomer && numericId) {
+        dbCustomer = await db.customerAccount.create({
+          data: {
+            shopId: shop.id,
+            shopifyCustomerId: numericId,
+            email: customerEmail || null,
+            displayName: customerEmail ? customerEmail.split("@")[0] : "Customer",
+          },
+        });
+      }
     }
+
+    const generation = await db.aiImageGeneration.create({
+      data: {
+        shopId: shop.id,
+        customerId: dbCustomer?.id || null,
+        productId: variantData.productId || null,
+        productHandle: variantData.productHandle || null,
+        variantId: variantData.variantId || null,
+        variantTitle: variantData.variantTitle || null,
+        prompt: variantData.prompt || "",
+        imageUrl: variantData.imageUrl || null,
+        status: "COMPLETED",
+        visibility: "PRIVATE",
+        moderationStatus: "APPROVED",
+        watermarkText: variantData.watermarkText || "orvellastudio.com",
+        openAiRequestId: variantData.openAiRequestId || null,
+        metadata: variantData.metadata || "{}",
+        selectedForCart: false,
+      },
+      include: { customer: true },
+    });
+
+    return {
+      id: generation.id,
+      customer: generation.customer
+        ? {
+          id: generation.customer.id,
+          shopifyCustomerId: generation.customer.shopifyCustomerId,
+          email: generation.customer.email,
+          displayName: generation.customer.displayName,
+        }
+        : null,
+    };
   }
+}

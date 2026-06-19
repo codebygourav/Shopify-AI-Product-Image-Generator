@@ -731,138 +731,110 @@
       if (root.dataset.aiGeneratorInitialized === "true") return;
       root.dataset.aiGeneratorInitialized = "true";
 
-      const button = root.querySelector("[data-ai-generate]");
-      const selectButton = root.querySelector("[data-ai-select]");
+      const generateButton = root.querySelector("[data-ai-generate]");
       const textarea = root.querySelector("[data-ai-prompt]");
       const status = root.querySelector("[data-ai-status]");
       const preview = root.querySelector("[data-ai-preview]");
-      const previewToggle = root.querySelector("[data-ai-preview-toggle]");
-      const publicInput = root.querySelector("[data-ai-public]");
-      const optionsRoot = root.querySelector("[data-ai-studio-options]");
-      const promptTools = root.querySelector("[data-ai-prompt-tools]");
       const form = productForm(root);
-      const selectImageButton = root.querySelector(
-        "[data-ai-select-image-button]",
-      );
-      const promptShowcaseImage = root.querySelector(
-        "[data-ai-prompt-showcase-image]",
-      );
-      const editPreviewButton = root.querySelector("[data-ai-edit-preview]");
-      if (promptShowcaseImage?.src) {
-        root.dataset.aiDefaultPromptPreview = promptShowcaseImage.src;
-      }
+
+      // Wizard UI elements
+      const orientationSelectBtns = root.querySelectorAll("[data-ai-orientation-select]");
+      const effectSelectBtns = root.querySelectorAll("[data-ai-effect-select]");
+      const previewFinaliseBtn = root.querySelector("[data-ai-preview-finalise]");
+      const previewEditToggleBtn = root.querySelector("[data-ai-preview-edit-toggle]");
+      const previewRegenerateBtn = root.querySelector("[data-ai-preview-regenerate]");
+      const editPromptBox = root.querySelector("[data-ai-edit-prompt-box]");
+      const tweakPromptTextarea = root.querySelector("[data-ai-tweak-prompt]");
+      const tweakGenerateBtn = root.querySelector("[data-ai-tweak-generate]");
+      const frameTypeSelect = root.querySelector("[data-ai-frame-type-select]");
+      const frameColorGroup = root.querySelector("[data-ai-frame-color-group]");
+      const frameColorSelect = root.querySelector("[data-ai-frame-color-select]");
+      const editorBackBtn = root.querySelector("[data-ai-editor-back]");
+      const checkoutBtn = root.querySelector("[data-ai-checkout-button]");
+
       let selectedImage = null;
       let draftVariants = [];
       let finalSelections = defaultFinalSelections();
-      let generatedPreviewHtml = "";
+      let generationRequest = null;
 
       root._setSelectedImage = (img) => {
         selectedImage = img;
         root._selectedImage = img;
-        syncPromptShowcase(root);
       };
       root._setDraftVariants = (vars) => {
         draftVariants = vars;
         root._draftVariants = vars;
-        syncPromptShowcase(root);
       };
       root._setFinalSelections = (sels) => {
         finalSelections = sels;
         root._finalSelections = sels;
       };
-      let generationRequest = null;
-      const emptyPreviewHtml = emptyPreviewStateHtml(root);
-      const productPreviewHtml = root.dataset.productImage
-        ? `<img src="${root.dataset.productImage}" alt="${escapeHtml(root.dataset.productTitle || "Product image")}"><span>Product image</span>`
-        : "";
 
       setStudioStep(root, "prompt");
 
       const studioConfig = await fetchStudioConfig(root);
-      renderStudioOptions(optionsRoot, studioConfig.optionGroups || []);
-      renderPromptTools(promptTools, studioConfig.promptTemplates || []);
       prefillPromptFromUrl(textarea);
       prefillOptionsFromUrl(root);
 
-      const returnButton = root.querySelector("[data-ai-return-editor]");
-      returnButton?.addEventListener("click", () => {
-        if (selectedImage) {
-          setStudioStep(root, "editor");
-        }
+      // Orientation Selector listener
+      orientationSelectBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const val = btn.dataset.aiOrientationSelect;
+          finalSelections.orientation = val;
+          finalSelections.size = defaultSizeForOrientation(val);
+          orientationSelectBtns.forEach(b => b.classList.toggle("is-active", b === btn));
+        });
       });
 
-      editPreviewButton?.addEventListener("click", () => {
-        if (!selectedImage && draftVariants[0]) {
-          root._setSelectedImage(
-            mergeImageFinalSelections(
-              draftVariants[0],
-              defaultFinalSelections(),
-            ),
-          );
-        }
-        if (selectedImage) {
-          setStudioStep(root, "editor");
-        }
+      // Effect Selector listener
+      effectSelectBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const val = btn.dataset.aiEffectSelect;
+          finalSelections.effect = val;
+          effectSelectBtns.forEach(b => b.classList.toggle("is-active", b === btn));
+        });
       });
 
-      selectImageButton?.addEventListener("click", () => {
-        if (!selectedImage) return;
-        root
-          .querySelector("[data-ai-customizer-section]")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-
-      await loadGeneratorRecentImages({
-        root,
-        preview,
-        textarea,
-        studioConfig,
-        setSelectedImage(nextImage) {
-          root._setSelectedImage(nextImage);
-        },
-        setFinalSelections(nextSelections) {
-          root._setFinalSelections(nextSelections);
-        },
-      });
-
-      promptTools?.addEventListener("click", (event) => {
-        const template = event.target.closest("[data-ai-template]");
-        if (!template) return;
-
-        textarea.value = template.dataset.aiTemplate || "";
-        textarea.focus();
-      });
-
-      // 3. Generate button loader
-      button.addEventListener("click", async () => {
+      // Generator logic helper
+      async function triggerGeneration(promptText, btnElement) {
         if (generationRequest) return;
-
-        const prompt = textarea.value.trim();
-        if (!prompt) {
+        
+        const finalPrompt = promptText.trim();
+        if (!finalPrompt) {
           status.textContent = "Enter an art direction first.";
           return;
         }
 
         const variant = selectedVariant(form);
         const selectedOptions = [];
-        const promptWithOptions = `${prompt}\n\nCustom product: ${studioConfig.title || root.dataset.productTitle}. Generate fast low-resolution draft concepts only. Do not apply size, frame, crop, or visual effect choices yet.`;
+        
+        // Append chosen effect style to openai prompt
+        let promptWithOptions = `${finalPrompt}\n\nCustom product: ${studioConfig.title || root.dataset.productTitle}.`;
+        if (finalSelections.effect && finalSelections.effect !== "none") {
+          promptWithOptions += ` Style: ${labelize(finalSelections.effect)} style.`;
+        }
+        if (finalSelections.orientation) {
+          promptWithOptions += ` Layout: ${labelize(finalSelections.orientation)} orientation, ${finalSelections.orientation === 'portrait' ? '2:3' : finalSelections.orientation === 'landscape' ? '3:2' : '1:1'} aspect ratio.`;
+        }
+        promptWithOptions += ` Generate fast low-resolution draft concepts only. Do not apply size, frame, crop, or visual effect choices yet.`;
 
-        const originalText = button.textContent;
-        button.disabled = true;
-        button.classList.add("is-loading");
-        button.textContent = "Generating 2 drafts...";
-        if (selectButton) selectButton.hidden = true;
+        const originalText = btnElement.textContent;
+        btnElement.disabled = true;
+        btnElement.classList.add("is-loading");
+        btnElement.textContent = "Generating...";
+        
         toggleGeneratorImageSections(root, true);
-        root.classList.add("is-generating");
-        status.textContent = publicInput?.checked
-          ? "Generating artwork. Community posts will wait for admin approval."
-          : "Moderating prompt and generating artwork...";
-        preview.classList.add("is-loading");
-        preview.innerHTML = `
-          <div class="aim-product-studio__empty aim-product-studio__empty--drafts">
-            <div class="aim-spinner"></div>
-            <span>Preparing two quick draft images...</span>
-          </div>`;
+        setStudioStep(root, "generating");
+        status.textContent = "Moderating prompt and generating artwork...";
+        
+        if (preview) {
+          preview.classList.add("is-loading");
+          preview.innerHTML = `
+            <div class="aim-product-studio__empty aim-product-studio__empty--drafts">
+              <div class="aim-spinner"></div>
+              <span>Preparing your draft artwork...</span>
+            </div>`;
+        }
 
         try {
           generationRequest = fetch(
@@ -880,9 +852,9 @@
                 customerId: root.dataset.customerId,
                 customerEmail: root.dataset.customerEmail,
                 prompt: promptWithOptions,
-                originalPrompt: prompt,
-                visibility: publicInput?.checked ? "PUBLIC" : "PRIVATE",
-                draftCount: 2,
+                originalPrompt: finalPrompt,
+                visibility: "PRIVATE",
+                draftCount: 1, // Defaulting to 1 draft for clean large view
                 draftQuality: "low",
                 draftSize: "1024x1024",
                 apiBase: root.dataset.apiBase || "/apps/ai-image",
@@ -891,198 +863,219 @@
           );
           const response = await generationRequest;
           const data = await readJson(response);
-          if (!data.success)
-            throw new Error(data.error || "Image generation failed.");
-          if (!data.image) {
-            throw new Error("The AI app did not return a preview image.");
-          }
+          if (!data.success) throw new Error(data.error || "Image generation failed.");
+          if (!data.image) throw new Error("The AI app did not return a preview image.");
 
-          const nextVariants = (data.variants || [data.generation])
-            .filter(Boolean)
-            .slice(0, 5);
+          const nextVariants = (data.variants || [data.generation]).filter(Boolean);
           root._setDraftVariants(nextVariants);
-          root._userEditing = true;
-          setStudioStep(root, "editor");
           root._setSelectedImage(
             mergeImageFinalSelections(
               draftVariants[0],
-              defaultFinalSelections(),
-            ),
+              finalSelections,
+            )
           );
-          root._setFinalSelections(metadataFinalSelections(selectedImage));
-          generatedPreviewHtml = previewImageHtml(
-            selectedImage.imageUrl || data.image,
-            prompt,
-          );
+          
+          if (tweakPromptTextarea) tweakPromptTextarea.value = finalPrompt;
+
           await renderGeneratedPreview(
             preview,
             selectedImage.imageUrl || data.image,
-            prompt,
+            finalPrompt,
           );
-          renderDraftEditor({
-            root,
-            variants: draftVariants,
-            selectedImage,
-            finalSelections,
-            preview,
-            prompt,
-            editorOptions: studioConfig.editorOptions,
-            setSelectedImage(nextImage) {
-              root._setSelectedImage(nextImage);
-            },
-            setFinalSelections(nextSelections) {
-              root._setFinalSelections(nextSelections);
-            },
-          });
-          storePreview(root, {
-            generation: selectedImage,
-            variants: draftVariants,
-            image: selectedImage.imageUrl || data.image,
-            prompt,
-          });
-          if (previewToggle) previewToggle.hidden = !productPreviewHtml;
-          if (previewToggle) setPreviewToggleState(root, "generated");
-          if (selectButton) selectButton.hidden = false;
-          status.textContent =
-            data.generation?.moderationStatus === "PENDING"
-              ? "Draft images generated. Choose one, edit options, then finalize for community approval."
-              : "Draft images generated. Choose one, edit options, then finalize for checkout.";
+          applyPreviewPresentation(preview, finalSelections);
+          
+          setStudioStep(root, "preview");
+          status.textContent = "Artwork generated successfully. Choose to edit, reset, or finalize your frame options.";
         } catch (error) {
           status.textContent = error.message;
-          toggleGeneratorImageSections(root, !!selectedImage);
+          setStudioStep(root, "prompt");
+          toggleGeneratorImageSections(root, false);
         } finally {
-          preview.classList.remove("is-loading");
-          root.classList.remove("is-generating");
-          button.disabled = false;
-          button.classList.remove("is-loading");
-          button.textContent = originalText;
+          if (preview) preview.classList.remove("is-loading");
+          btnElement.disabled = false;
+          btnElement.classList.remove("is-loading");
+          btnElement.textContent = originalText;
           generationRequest = null;
+        }
+      }
+
+      // Bind generate action
+      generateButton.addEventListener("click", () => {
+        triggerGeneration(textarea.value, generateButton);
+      });
+
+      // Step 2 Action Listeners
+      previewFinaliseBtn?.addEventListener("click", () => {
+        setStudioStep(root, "editor");
+        
+        // Render Size Selector dropdown dynamically matching orientation
+        renderSizeSelector(root, preview, finalSelections);
+        applyPreviewPresentation(preview, finalSelections);
+      });
+
+      previewEditToggleBtn?.addEventListener("click", () => {
+        if (editPromptBox) {
+          editPromptBox.hidden = !editPromptBox.hidden;
         }
       });
 
-      // 4. Combined checkout action loader
-      selectButton?.addEventListener("click", async () => {
+      previewRegenerateBtn?.addEventListener("click", () => {
+        resetGeneratorState(root);
+      });
+
+      tweakGenerateBtn?.addEventListener("click", () => {
+        triggerGeneration(tweakPromptTextarea.value, tweakGenerateBtn);
+      });
+
+      // Step 3 Frame Type Select
+      frameTypeSelect?.addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val === "canvas") {
+          if (frameColorGroup) frameColorGroup.hidden = true;
+          finalSelections.frame = "none";
+          finalSelections.frameColor = "black";
+        } else {
+          if (frameColorGroup) frameColorGroup.hidden = false;
+          finalSelections.frame = "gallery";
+          finalSelections.frameColor = frameColorSelect ? frameColorSelect.value : "black";
+        }
+        applyPreviewPresentation(preview, finalSelections);
+        storePreview(root, {
+          generation: mergeImageFinalSelections(selectedImage, finalSelections),
+          image: selectedImage.imageUrl,
+          prompt: displayPrompt(selectedImage),
+        });
+      });
+
+      // Step 3 Frame Color Select
+      frameColorSelect?.addEventListener("change", (e) => {
+        finalSelections.frameColor = e.target.value;
+        applyPreviewPresentation(preview, finalSelections);
+        storePreview(root, {
+          generation: mergeImageFinalSelections(selectedImage, finalSelections),
+          image: selectedImage.imageUrl,
+          prompt: displayPrompt(selectedImage),
+        });
+      });
+
+      // Step 3 Back Button
+      editorBackBtn?.addEventListener("click", () => {
+        setStudioStep(root, "preview");
+      });
+
+      // Step 3 Checkout Button (Add to Cart)
+      checkoutBtn?.addEventListener("click", async () => {
         if (!selectedImage) return;
 
-        const originalText = selectButton.textContent;
-        selectButton.disabled = true;
-        selectButton.classList.add("is-loading");
-        selectButton.textContent = "Adding to cart...";
+        const originalText = checkoutBtn.textContent;
+        checkoutBtn.disabled = true;
+        checkoutBtn.classList.add("is-loading");
+        checkoutBtn.textContent = "Adding to cart...";
         status.textContent = "Saving artwork and opening cart...";
 
         try {
-          if (!selectedImage.id) {
-            const response = await fetch(
-              apiUrl(root.dataset.apiBase, "/api/customer-images"),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  shop: root.dataset.shop,
-                  generation: mergeImageFinalSelections(
-                    selectedImage,
-                    finalSelections,
-                  ),
-                  finalSelections,
-                  customerId: root.dataset.customerId,
-                  customerEmail: root.dataset.customerEmail,
-                  intent: "select-cart",
-                }),
-              },
-            );
-            const data = await readJson(response);
-            if (!data.success) {
-              throw new Error(data.error || "Could not save selected image.");
-            }
-            selectedImage = data.image;
-            storePreview(root, {
-              generation: selectedImage,
-              image: selectedImage.imageUrl,
-              prompt: displayPrompt(selectedImage),
-            });
-          } else {
-            const response = await fetch(
-              apiUrl(root.dataset.apiBase, "/api/customer-images"),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  shop: root.dataset.shop,
-                  generationId: selectedImage.id,
-                  customerId: root.dataset.customerId,
-                  customerEmail: root.dataset.customerEmail,
-                  finalSelections,
-                }),
-              },
-            );
-            const data = await readJson(response);
-            if (!data.success) {
-              throw new Error(data.error || "Could not save selected image.");
-            }
-            selectedImage = data.image;
-            storePreview(root, {
-              generation: selectedImage,
-              image: selectedImage.imageUrl,
-              prompt: displayPrompt(selectedImage),
-            });
+          const finalImageSelection = mergeImageFinalSelections(selectedImage, finalSelections);
+          let responseImage = selectedImage;
+
+          // Save the customer image record
+          const response = await fetch(
+            apiUrl(root.dataset.apiBase, "/api/customer-images"),
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                shop: root.dataset.shop,
+                generationId: selectedImage.id || null,
+                generation: selectedImage.id ? null : finalImageSelection,
+                finalSelections,
+                customerId: root.dataset.customerId,
+                customerEmail: root.dataset.customerEmail,
+                intent: selectedImage.id ? null : "select-cart",
+              }),
+            },
+          );
+          const data = await readJson(response);
+          if (!data.success) {
+            throw new Error(data.error || "Could not save selected image.");
           }
+          responseImage = data.image;
+          
+          storePreview(root, {
+            generation: responseImage,
+            image: responseImage.imageUrl,
+            prompt: displayPrompt(responseImage),
+          });
 
           const properties = cartProperties(
-            selectedImage,
-            selectedImage.variantTitle || selectedVariant(form).title,
+            responseImage,
+            responseImage.variantTitle || selectedVariant(form).title,
           );
           applyCartPropertiesToForm(form, properties);
 
-          status.textContent = "Adding generated image to checkout...";
+          status.textContent = "Adding custom item to cart...";
           await addGeneratedImageToCart({
             root,
             studioConfig,
             form,
-            selectedImage,
+            selectedImage: responseImage,
           });
 
           status.textContent = "Redirecting to cart...";
           window.location.replace("/cart");
         } catch (error) {
           status.textContent = error.message;
-          selectButton.disabled = false;
-          selectButton.classList.remove("is-loading");
-          selectButton.textContent = originalText;
+          checkoutBtn.disabled = false;
+          checkoutBtn.classList.remove("is-loading");
+          checkoutBtn.textContent = originalText;
         }
       });
 
-      previewToggle?.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-ai-view]");
-        if (!button) return;
-
-        if (button.dataset.aiView === "product" && productPreviewHtml) {
-          preview.innerHTML = productPreviewHtml;
-          setPreviewToggleState(root, "product");
-        } else {
-          preview.innerHTML = generatedPreviewHtml;
-          setPreviewToggleState(root, "generated");
-        }
-      });
-
-      if (selectedImage) {
-        setStudioStep(root, "editor");
-        renderDraftEditor({
-          root,
-          variants: draftVariants.length ? draftVariants : [selectedImage],
-          selectedImage,
-          finalSelections,
-          preview,
-          prompt: displayPrompt(selectedImage),
-          editorOptions: studioConfig.editorOptions,
-          setSelectedImage(nextImage) {
-            root._setSelectedImage(nextImage);
-          },
-          setFinalSelections(nextSelections) {
-            root._setFinalSelections(nextSelections);
-          },
-        });
+      // Load stored preview if any
+      const savedPreview = getStoredPreview(root);
+      if (savedPreview?.generation) {
+        selectedImage = savedPreview.generation;
+        finalSelections = metadataFinalSelections(selectedImage);
+        root._setSelectedImage(selectedImage);
+        root._setFinalSelections(finalSelections);
+        
+        toggleGeneratorImageSections(root, true);
+        setStudioStep(root, "preview");
+        if (tweakPromptTextarea) tweakPromptTextarea.value = displayPrompt(selectedImage);
+        
+        await renderGeneratedPreview(preview, selectedImage.imageUrl, displayPrompt(selectedImage));
+        applyPreviewPresentation(preview, finalSelections);
       }
     });
+
+  // Size renderer helper
+  function renderSizeSelector(root, preview, finalSelections) {
+    const sizePlaceholder = root.querySelector("[data-ai-size-placeholder]");
+    if (!sizePlaceholder) return;
+
+    const sizes = sizeGroups()[finalSelections.orientation || "portrait"] || [];
+    if (!sizes.some(s => s.value === finalSelections.size)) {
+      finalSelections.size = sizes[0]?.value || "";
+    }
+
+    sizePlaceholder.innerHTML = `
+      <label class="aim-select-field">
+        <span>Dimensions</span>
+        <select data-ai-size-select>
+          ${sizes.map(size => `
+            <option value="${size.value}" ${size.value === finalSelections.size ? "selected" : ""}>
+              ${size.label}
+            </option>
+          `).join("")}
+        </select>
+      </label>
+    `;
+
+    const sizeSelect = sizePlaceholder.querySelector("[data-ai-size-select]");
+    sizeSelect?.addEventListener("change", (e) => {
+      finalSelections.size = e.target.value;
+      applyPreviewPresentation(preview, finalSelections);
+    });
+  }
 
   enhanceCartLineImages();
   enhanceStaticImages();
@@ -1317,14 +1310,10 @@
   }
 
   function toggleGeneratorImageSections(root, visible) {
-    const generatedSection = root.querySelector("[data-ai-generated-section]");
-    const customizerSection = root.querySelector(
-      "[data-ai-customizer-section]",
-    );
     const emptyPanel = root.querySelector("[data-ai-empty-panel]");
-    if (generatedSection) generatedSection.hidden = !visible;
-    if (customizerSection) customizerSection.hidden = !visible;
+    const previewContainer = root.querySelector("[data-ai-preview-container]");
     if (emptyPanel) emptyPanel.hidden = visible;
+    if (previewContainer) previewContainer.hidden = !visible;
   }
 
   async function fetchReviews(root) {
@@ -2433,24 +2422,37 @@
     clearStoredPreview(root);
     setStudioStep(root, "prompt");
     toggleGeneratorImageSections(root, false);
+    
     const preview = root.querySelector("[data-ai-preview]");
     const status = root.querySelector("[data-ai-status]");
-    const selectButton = root.querySelector("[data-ai-select]");
     const generateButton = root.querySelector("[data-ai-generate]");
-    const thumbsContainer = root.querySelector(
-      "[data-ai-draft-thumbs-container]",
-    );
+    const promptInput = root.querySelector("[data-ai-prompt]");
+    const tweakInput = root.querySelector("[data-ai-tweak-prompt]");
+    const editPromptBox = root.querySelector("[data-ai-edit-prompt-box]");
+    
+    if (promptInput) promptInput.value = "";
+    if (tweakInput) tweakInput.value = "";
+    if (editPromptBox) editPromptBox.hidden = true;
+    
+    root.querySelectorAll("[data-ai-orientation-select]").forEach(btn => {
+      btn.classList.toggle("is-active", btn.dataset.aiOrientationSelect === "portrait");
+    });
+    root.querySelectorAll("[data-ai-effect-select]").forEach(btn => {
+      btn.classList.toggle("is-active", btn.dataset.aiEffectSelect === "none");
+    });
+    
     if (preview) {
       preview.classList.remove("is-loading");
       preview.innerHTML = emptyPreviewStateHtml(root);
     }
     if (status) status.textContent = "";
-    if (selectButton) selectButton.hidden = true;
     if (generateButton) {
       generateButton.disabled = false;
       generateButton.classList.remove("is-loading");
+      if (generateButton.dataset.aiOriginalText) {
+        generateButton.textContent = generateButton.dataset.aiOriginalText;
+      }
     }
-    if (thumbsContainer) thumbsContainer.innerHTML = "";
     resetTransientLoadingState(root);
   }
 
@@ -2764,8 +2766,8 @@
 
   function defaultFinalSelections() {
     return {
-      orientation: "square",
-      size: "12x12",
+      orientation: "portrait",
+      size: "16x24",
       frame: "none",
       frameColor: "black",
       effect: "none",
@@ -3028,29 +3030,27 @@
         { value: "square", label: "Square" },
       ],
       frame: [
-        { value: "none", label: "No frame" },
-        { value: "thin", label: "Thin" },
-        { value: "gallery", label: "Gallery" },
-        { value: "classic", label: "Classic" },
+        { value: "none", label: "Stretched Canvas" },
+        { value: "gallery", label: "Floating Frame" },
       ],
       frameColor: [
-        { value: "black", label: "Black" },
-        { value: "white", label: "White" },
+        { value: "black", label: "Matte Black" },
         { value: "walnut", label: "Walnut" },
-        { value: "gold", label: "Gold" },
+        { value: "oak", label: "Natural Oak" },
       ],
       effect: [
         { value: "none", label: "Clean" },
-        { value: "vintage", label: "Vintage" },
+        { value: "abstract", label: "Abstract" },
+        { value: "minimalist", label: "Minimalist" },
         { value: "retro", label: "Retro" },
-        { value: "cinematic", label: "Cinematic" },
+        { value: "nature", label: "Nature" },
+        { value: "oil-painting", label: "Oil Painting" },
       ],
     };
   }
 
   function orientationEditorOptions() {
     return [
-      { value: "free", label: "Free size" },
       { value: "landscape", label: "Landscape" },
       { value: "portrait", label: "Portrait" },
       { value: "square", label: "Square" },
@@ -3059,24 +3059,23 @@
 
   function sizeGroups() {
     return {
-      free: [{ value: "", label: "Auto fit" }],
       landscape: [
-        { value: "12x8", label: "12 x 8 in" },
-        { value: "16x9", label: "16 x 9 in" },
-        { value: "18x12", label: "18 x 12 in" },
-        { value: "24x16", label: "24 x 16 in" },
+        { value: "24x16", label: "24” × 16”" },
+        { value: "36x24", label: "36” × 24”" },
+        { value: "45x30", label: "45” × 30”" },
+        { value: "60x40", label: "60” × 40”" },
       ],
       portrait: [
-        { value: "8x12", label: "8 x 12 in" },
-        { value: "12x18", label: "12 x 18 in" },
-        { value: "16x24", label: "16 x 24 in" },
-        { value: "20x30", label: "20 x 30 in" },
+        { value: "16x24", label: "16” × 24”" },
+        { value: "24x36", label: "24” × 36”" },
+        { value: "30x45", label: "30” × 45”" },
+        { value: "40x60", label: "40” × 60”" },
       ],
       square: [
-        { value: "8x8", label: "8 x 8 in" },
-        { value: "12x12", label: "12 x 12 in" },
-        { value: "16x16", label: "16 x 16 in" },
-        { value: "24x24", label: "24 x 24 in" },
+        { value: "18x18", label: "18” × 18”" },
+        { value: "24x24", label: "24” × 24”" },
+        { value: "36x36", label: "36” × 36”" },
+        { value: "48x48", label: "48” × 48”" },
       ],
     };
   }
@@ -3179,27 +3178,18 @@
 
   function setStudioStep(root, step) {
     root.dataset.aiStudioStep = step;
-    root.classList.toggle("is-draft-screen", step === "editor");
+    root.classList.toggle("is-prompt-screen", step === "prompt" || step === "generating");
+    root.classList.toggle("is-preview-screen", step === "preview");
     root.classList.toggle("is-editor-screen", step === "editor");
-    root.classList.toggle("is-prompt-screen", step === "prompt");
-    syncPromptShowcase(root);
+    root.classList.toggle("is-generating", step === "generating");
 
-    const returnBtn = root.querySelector("[data-ai-return-editor]");
-    const actionsContainer = root.querySelector(".aim-actions");
-    if (returnBtn) {
-      const showReturn =
-        step === "prompt" &&
-        (root._selectedImage || root._draftVariants?.length);
-      if (showReturn) {
-        returnBtn.style.display = "";
-        returnBtn.hidden = false;
-        actionsContainer?.classList.add("has-return-btn");
-      } else {
-        returnBtn.style.display = "none";
-        returnBtn.hidden = true;
-        actionsContainer?.classList.remove("has-return-btn");
-      }
-    }
+    const promptContainer = root.querySelector(".aim-prompt-content");
+    const previewContainer = root.querySelector("[data-ai-preview-controls-container]");
+    const editorContainer = root.querySelector("[data-ai-editor-controls-container]");
+
+    if (promptContainer) promptContainer.hidden = (step !== "prompt" && step !== "generating");
+    if (previewContainer) previewContainer.hidden = (step !== "preview");
+    if (editorContainer) editorContainer.hidden = (step !== "editor");
   }
 
   function syncPromptShowcase(root) {

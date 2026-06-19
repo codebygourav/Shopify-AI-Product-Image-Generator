@@ -1,23 +1,4 @@
-2026-06-08T07:43:13.861Z
-Error: 400 Invalid value: 'standard'. Supported values are: 'low', 'medium', 'high', and 'auto'.
-Stack: Error: 400 Invalid value: 'standard'. Supported values are: 'low', 'medium', 'high', and 'auto'.
-    at Function.generate (file:///Users/apple/Downloads/ai-image-manager/node_modules/openai/src/core/error.ts:73:14)
-    at OpenAI.makeStatusError (file:///Users/apple/Downloads/ai-image-manager/node_modules/openai/src/client.ts:591:28)
-    at OpenAI.makeRequest (file:///Users/apple/Downloads/ai-image-manager/node_modules/openai/src/client.ts:872:24)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at generateAiImages (/Users/apple/Downloads/ai-image-manager/app/services/openai-images.server.js:81:18)
-    at action (/Users/apple/Downloads/ai-image-manager/app/routes/api.generate-image.jsx:134:25)
-    at callRouteHandler (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-RJYABSBD.mjs:533:16)
-    at file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:5045:19
-    at callLoaderOrAction (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:5097:16)
-    at async Promise.all (index 0)
-    at defaultDataStrategy (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:4722:17)
-    at callDataStrategyImpl (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:4989:17)
-    at callDataStrategy (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:4005:19)
-    at submit (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:3802:21)
-    at queryImpl (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:3734:23)
-    at Object.queryRoute (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:3698:18)
-    at handleResourceRequest (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-RJYABSBD.mjs:1616:18)
-    at requestHandler (file:///Users/apple/Downloads/ai-image-manager/node_modules/react-router/dist/development/chunk-RJYABSBD.mjs:1314:18)
-    at nodeHandler (/Users/apple/Downloads/ai-image-manager/node_modules/@react-router/dev/dist/vite.js:3827:30)
-    at /Users/apple/Downloads/ai-image-manager/node_modules/@react-router/dev/dist/vite.js:3834:17
+2026-06-15T13:11:08.791Z
+Error: Prisma session table does not exist. This could happen for a few reasons, see https://github.com/Shopify/shopify-app-js/tree/main/packages/apps/session-storage/shopify-app-session-storage-prisma#troubleshooting for more information
+Stack: Error: Prisma session table does not exist. This could happen for a few reasons, see https://github.com/Shopify/shopify-app-js/tree/main/packages/apps/session-storage/shopify-app-session-storage-prisma#troubleshooting for more information
+    at /Users/apple/Downloads/ai-image-manager/node_modules/@shopify/src/prisma.ts:55:15

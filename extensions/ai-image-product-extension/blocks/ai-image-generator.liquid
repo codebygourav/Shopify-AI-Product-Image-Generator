@@ -6,6 +6,52 @@
   {% assign ai_source_product = block.settings.source_product %}
 {% endif %}
 
+{% if block.settings.show_banner %}
+  <div class="aim-top-banner {% if block.settings.banner_width == 'contained' %}aim-top-banner--contained{% endif %}" style="
+    {% if block.settings.banner_image != blank %}
+      background-image: url('{{ block.settings.banner_image | image_url: width: 2000 }}');
+    {% else %}
+      background-color: {{ block.settings.banner_bg_color }};
+    {% endif %}
+    color: {{ block.settings.banner_text_color }};
+    border-radius: {{ block.settings.banner_border_radius }}px;
+  ">
+    <div class="aim-top-banner-overlay" style="background: rgba(0, 0, 0, {{ block.settings.banner_overlay_opacity | divided_by: 100.0 }});"></div>
+    <div class="aim-top-banner-content">
+      <nav class="aim-breadcrumbs" aria-label="breadcrumbs">
+        {% if block.settings.banner_breadcrumbs != blank %}
+          {{ block.settings.banner_breadcrumbs }}
+        {% else %}
+          <a href="/">Home</a>
+          <span class="aim-breadcrumbs-separator">></span>
+          <span>
+            {% if template.name == 'product' %}
+              {{ product.title }}
+            {% elsif template.name == 'page' %}
+              {{ page.title }}
+            {% else %}
+              {{ block.settings.heading | default: "Generate your own image" }}
+            {% endif %}
+          </span>
+        {% endif %}
+      </nav>
+      <h1 class="aim-banner-title">
+        {% if block.settings.banner_title != blank %}
+          {{ block.settings.banner_title }}
+        {% else %}
+          {% if template.name == 'product' %}
+            {{ product.title }}
+          {% elsif template.name == 'page' %}
+            {{ page.title }}
+          {% else %}
+            {{ block.settings.heading | default: "Generate your own image" }}
+          {% endif %}
+        {% endif %}
+      </h1>
+    </div>
+  </div>
+{% endif %}
+
 <div
   class="aim-product-studio"
   data-ai-image-generator
@@ -23,18 +69,39 @@
   data-preview-label="{{ block.settings.preview_label | escape }}"
 >
 
-
-  <!-- Left Sidebar: Generate controls -->
+  <!-- Left Sidebar Panels -->
   <div class="aim-product-studio__panel">
+
+    <!-- Step 1: Prompt Setup Form -->
     <div class="aim-prompt-content">
       <div class="aim-prompt-panel-head">
         <p>Custom art studio</p>
         <h2>Create Your Own Artwork</h2>
-        <span>Describe the artwork, mood, colors, or room style. After generation, choose a draft and customize the frame.</span>
+        <span>Select options, describe your idea, and choose a visual style before generating.</span>
       </div>
 
+      <!-- Orientation field -->
+      <div class="aim-setup-field">
+        <span class="aim-setup-label">1. Choose Orientation</span>
+        <div class="aim-orientation-options">
+          <button type="button" class="aim-orientation-btn is-active" data-ai-orientation-select="portrait">
+            <svg class="aim-orientation-svg portrait" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"></rect></svg>
+            Portrait
+          </button>
+          <button type="button" class="aim-orientation-btn" data-ai-orientation-select="square">
+            <svg class="aim-orientation-svg square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
+            Square
+          </button>
+          <button type="button" class="aim-orientation-btn" data-ai-orientation-select="landscape">
+            <svg class="aim-orientation-svg landscape" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect></svg>
+            Landscape
+          </button>
+        </div>
+      </div>
+
+      <!-- Prompt textarea field -->
       <label class="aim-field">
-        <span>Describe your vision</span>
+        <span class="aim-setup-label">2. Describe your vision</span>
         <textarea
           class="aim-textarea"
           rows="4"
@@ -43,7 +110,21 @@
         ></textarea>
       </label>
 
+      <!-- Prompt templates / inspirations -->
       <div class="aim-prompt-tools" data-ai-prompt-tools></div>
+
+      <!-- Effect / Style field -->
+      <div class="aim-setup-field">
+        <span class="aim-setup-label">3. Select Style / Effect</span>
+        <div class="aim-effect-options">
+          <button type="button" class="aim-effect-btn is-active" data-ai-effect-select="none">Clean</button>
+          <button type="button" class="aim-effect-btn" data-ai-effect-select="abstract">Abstract</button>
+          <button type="button" class="aim-effect-btn" data-ai-effect-select="minimalist">Minimalist</button>
+          <button type="button" class="aim-effect-btn" data-ai-effect-select="retro">Retro</button>
+          <button type="button" class="aim-effect-btn" data-ai-effect-select="nature">Nature</button>
+          <button type="button" class="aim-effect-btn" data-ai-effect-select="oil-painting">Oil Painting</button>
+        </div>
+      </div>
 
       <label class="aim-checkbox" hidden>
         <input type="checkbox" data-ai-public>
@@ -54,30 +135,95 @@
         <button class="aim-button aim-button--primary" type="button" data-ai-generate>
           {{ block.settings.button_label }}
         </button>
-        <button class="aim-button aim-button--outline" type="button" data-ai-return-editor style="display: none;">
-          Return to Editor
-        </button>
       </div>
 
       <p class="aim-status" data-ai-status></p>
     </div>
 
-    <div class="aim-prompt-showcase" data-ai-prompt-showcase>
-      {% if ai_source_product and ai_source_product.featured_image %}
-        <img
-          src="{{ ai_source_product.featured_image | image_url: width: 760 }}"
-          alt=""
-          loading="lazy"
-          data-ai-prompt-showcase-image
-        >
-      {% endif %}
-      <button class="aim-prompt-showcase__edit" type="button" data-ai-edit-preview aria-label="Edit generated image" hidden>
-        ✎
-      </button>
+    <!-- Step 2: Generated Image Preview Controls -->
+    <div class="aim-preview-controls-container" data-ai-preview-controls-container hidden>
+      <div class="aim-prompt-panel-head">
+        <p>Custom art studio</p>
+        <h2>Your Generated Artwork</h2>
+        <span>Select an option to refine your prompt, start over, or finalize your choices.</span>
+      </div>
+
+      <div class="aim-preview-actions-vertical">
+        <button class="aim-button aim-button--primary" type="button" data-ai-preview-finalise>
+          Finalize Design
+        </button>
+        <div class="aim-preview-row">
+          <button class="aim-button aim-button--outline" type="button" data-ai-preview-edit-toggle>
+            Edit Prompt
+          </button>
+          <button class="aim-button aim-button--outline" type="button" data-ai-preview-regenerate>
+            Start Over
+          </button>
+        </div>
+      </div>
+
+      <div class="aim-edit-prompt-box" data-ai-edit-prompt-box hidden>
+        <label class="aim-field">
+          <span>Edit Prompt</span>
+          <textarea class="aim-textarea" rows="3" data-ai-tweak-prompt></textarea>
+        </label>
+        <button class="aim-button aim-button--primary" type="button" data-ai-tweak-generate>
+          Regenerate
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Customizer (Size > Frame > Color > Checkout) -->
+    <div class="aim-editor-controls-container" data-ai-editor-controls-container hidden>
+      <div class="aim-prompt-panel-head">
+        <p>Custom art studio</p>
+        <h2>Configure Product</h2>
+        <span>Set size, canvas framing, and options before checking out.</span>
+      </div>
+
+      <div class="aim-editor-fields">
+        <!-- 1. Select Size -->
+        <div class="aim-editor-field-group">
+          <h4 class="aim-section-subtitle">1. Select Size</h4>
+          <div class="aim-size-controls" data-ai-size-placeholder></div>
+        </div>
+
+        <!-- 2. Choose Frame -->
+        <div class="aim-editor-field-group">
+          <h4 class="aim-section-subtitle">2. Choose Frame</h4>
+          <label class="aim-select-field">
+            <span>Frame Preset</span>
+            <select data-ai-frame-type-select>
+              <option value="canvas">Stretched Canvas</option>
+              <option value="floating">Floating Frame</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- 3. Frame Color -->
+        <div class="aim-editor-field-group" data-ai-frame-color-group hidden>
+          <h4 class="aim-section-subtitle">3. Choose Frame Color</h4>
+          <label class="aim-select-field">
+            <span>Frame Color</span>
+            <select data-ai-frame-color-select>
+              <option value="black">Matte Black</option>
+              <option value="walnut">Walnut</option>
+              <option value="oak">Natural Oak</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="aim-editor-actions-sticky">
+        <button class="aim-button aim-button--outline" type="button" data-ai-editor-back>Back</button>
+        <button class="aim-button aim-button--filled" type="button" data-ai-checkout-button>
+          Add to Cart
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Right Area: Customizer (only visible in editor screen mode) -->
+  <!-- Right Area: Preview area -->
   <div class="aim-product-studio__media">
     <div class="aim-generator-empty-panel" data-ai-empty-panel>
       <div class="aim-product-studio__empty aim-product-studio__empty--studio">
@@ -95,49 +241,10 @@
       </div>
     </div>
 
-    <!-- Your Generated Images -->
-    <div class="aim-generated-section" data-ai-generated-section hidden>
-      <div class="aim-generated-section__head">
-        <h4 class="aim-section-subtitle">Your Generated Images</h4>
-        <button class="aim-button aim-button--outline aim-button--compact" type="button" data-ai-select-image-button>Select Image</button>
-      </div>
-      <div class="aim-draft-thumbs-container" data-ai-draft-thumbs-container></div>
-    </div>
-
-    <!-- Customize Grid -->
-    <div class="aim-customizer-section" data-ai-customizer-section hidden>
-      <div class="aim-editor-header">
-        <div class="aim-editor-title-group">
-          <h3 class="aim-heading--editor">Customize Your Artwork</h3>
-        </div>
-        <div class="aim-editor-actions">
-          <button type="button" class="aim-button aim-button--outline" data-ai-editor-reset>Clear</button>
-          <button class="aim-button aim-button--filled" type="button" data-ai-select hidden>
-            Finalize & Checkout
-          </button>
-        </div>
-      </div>
-      <div class="aim-customize-grid">
-        <!-- 1. Select Size -->
-        <div class="aim-customize-col">
-          <h4 class="aim-section-subtitle">1. Select Size</h4>
-          <div class="aim-size-controls" data-ai-size-placeholder></div>
-        </div>
-
-        <!-- 2. Choose Frame -->
-        <div class="aim-customize-col">
-          <h4 class="aim-section-subtitle">2. Choose Frame</h4>
-          <div class="aim-frame-controls" data-ai-frame-placeholder></div>
-        </div>
-
-        <!-- 3. Preview -->
-        <div class="aim-customize-col">
-          <h4 class="aim-section-subtitle">3. Preview</h4>
-          <div class="aim-product-studio__preview" data-ai-preview>
-            <div class="aim-product-studio__empty">
-              <span>Your creativity starts here</span>
-            </div>
-          </div>
+    <div class="aim-product-studio__preview-container" data-ai-preview-container hidden>
+      <div class="aim-product-studio__preview" data-ai-preview>
+        <div class="aim-product-studio__empty">
+          <span>Your creativity starts here</span>
         </div>
       </div>
     </div>
@@ -198,8 +305,13 @@
     {
       "type": "checkbox",
       "id": "show_banner",
-      "label": "Show text banner on prompt screen",
-      "default": false
+      "label": "Show top header banner",
+      "default": true
+    },
+    {
+      "type": "image_picker",
+      "id": "banner_image",
+      "label": "Banner background image"
     },
     {
       "type": "color",
@@ -211,7 +323,53 @@
       "type": "color",
       "id": "banner_text_color",
       "label": "Banner text color",
-      "default": "#545454"
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "text",
+      "id": "banner_title",
+      "label": "Banner title override",
+      "info": "Leave blank to use dynamic title"
+    },
+    {
+      "type": "text",
+      "id": "banner_breadcrumbs",
+      "label": "Banner breadcrumbs override",
+      "info": "Leave blank to use dynamic breadcrumbs"
+    },
+    {
+      "type": "range",
+      "id": "banner_border_radius",
+      "label": "Banner border radius (px)",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "banner_overlay_opacity",
+      "label": "Banner overlay opacity",
+      "min": 0,
+      "max": 100,
+      "step": 10,
+      "default": 40
+    },
+    {
+      "type": "select",
+      "id": "banner_width",
+      "label": "Banner width",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "contained",
+          "label": "Contained (with margins)"
+        }
+      ],
+      "default": "full"
     },
     {
       "type": "text",
@@ -256,14 +414,12 @@
     {
       "type": "url",
       "id": "api_base_url",
-      "label": "App API base URL",
-      "info": "Use your app URL during development, or your Shopify app proxy URL in production."
+      "label": "App API base URL"
     },
     {
       "type": "text",
       "id": "checkout_variant_id",
-      "label": "Checkout variant ID override",
-      "info": "Optional. Use this when the block is placed on a custom page without a Shopify product form."
+      "label": "Checkout variant ID override"
     },
     {
       "type": "checkbox",
@@ -280,8 +436,7 @@
     {
       "type": "url",
       "id": "community_url",
-      "label": "Community gallery page URL",
-      "info": "Used when customer clicks Go to community from inspiration images."
+      "label": "Community gallery page URL"
     },
     {
       "type": "text",

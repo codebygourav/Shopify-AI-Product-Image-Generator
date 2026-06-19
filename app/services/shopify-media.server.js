@@ -275,11 +275,23 @@ export async function uploadImageToShopifyFiles({
 }
 
 export async function clonePoolImageToUniqueFile(poolImageUrl) {
-  const filename = String(poolImageUrl || "").match(
-    /\/ai-generated\/([^/?#]+\.(?:png|jpe?g|webp))/i,
-  )?.[1];
-  if (!filename) {
-    throw new Error("Draft pool image path is invalid.");
+  // Validate input
+  if (!poolImageUrl) {
+    throw new Error(`Draft pool image path is invalid. Received: ${poolImageUrl}`);
+  }
+
+  // Extract filename from URL - handles both local and remote URLs
+  // Examples: "image.png", "/path/to/image.png", "https://...../image.png?params"
+  const urlString = String(poolImageUrl);
+  const filename = urlString
+    .split('?')[0]  // Remove query string
+    .split('#')[0]  // Remove fragment
+    .split('/')     // Split by path separator
+    .filter(Boolean) // Remove empty strings
+    .pop();          // Get last part (filename)
+
+  if (!filename || !/\.(png|jpe?g|webp|jpg)$/i.test(filename)) {
+    throw new Error(`Draft pool image path is invalid. Could not extract valid filename from: ${urlString}`);
   }
 
   const fs = await import("node:fs/promises");
