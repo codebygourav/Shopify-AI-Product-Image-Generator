@@ -1,4 +1,21 @@
-2026-06-15T13:11:08.791Z
-Error: Prisma session table does not exist. This could happen for a few reasons, see https://github.com/Shopify/shopify-app-js/tree/main/packages/apps/session-storage/shopify-app-session-storage-prisma#troubleshooting for more information
-Stack: Error: Prisma session table does not exist. This could happen for a few reasons, see https://github.com/Shopify/shopify-app-js/tree/main/packages/apps/session-storage/shopify-app-session-storage-prisma#troubleshooting for more information
-    at /Users/apple/Downloads/ai-image-manager/node_modules/@shopify/src/prisma.ts:55:15
+2026-06-19T07:14:44.362Z
+Error: Draft pool image path is invalid. Could not extract valid filename from: https://dummyimage.com/1024x1024/7d7355/ffffff.png&text=Generated+AI+Image
+Stack: Error: Draft pool image path is invalid. Could not extract valid filename from: https://dummyimage.com/1024x1024/7d7355/ffffff.png&text=Generated+AI+Image
+    at clonePoolImageToUniqueFile (R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/app/services/shopify-media.server.js:300:11)
+    at eval (R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/app/routes/api.generate-image.jsx:167:69)
+    at Array.map (<anonymous>)
+    at action (R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/app/routes/api.generate-image.jsx:165:57)
+    at callRouteHandler (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-RJYABSBD.mjs:533:16)
+    at file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:5045:19
+    at callLoaderOrAction (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:5097:16)
+    at async Promise.all (index 0)
+    at defaultDataStrategy (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:4722:17)
+    at callDataStrategyImpl (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:4989:17)
+    at callDataStrategy (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:4005:19)
+    at submit (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:3802:21)
+    at queryImpl (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:3734:23)
+    at Object.queryRoute (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-4N6VE7H7.mjs:3698:18)
+    at handleResourceRequest (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-RJYABSBD.mjs:1616:18)
+    at requestHandler (file:///R:/companyProjects/laravel/Ai-image-generater/Shopify-AI-Product-Image-Generator/node_modules/react-router/dist/development/chunk-RJYABSBD.mjs:1314:18)
+    at nodeHandler (R:\companyProjects\laravel\Ai-image-generater\Shopify-AI-Product-Image-Generator\node_modules\@react-router\dev\dist\vite.js:3827:30)
+    at R:\companyProjects\laravel\Ai-image-generater\Shopify-AI-Product-Image-Generator\node_modules\@react-router\dev\dist\vite.js:3834:17

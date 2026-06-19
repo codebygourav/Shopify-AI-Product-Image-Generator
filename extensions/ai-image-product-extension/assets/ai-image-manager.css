@@ -1,15 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&display=swap");
+/* @import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&display=swap"); */
 
-body {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
 
 [hidden] {
   display: none !important;
@@ -30,9 +20,10 @@ body {
   --aim-success: #22734d;
   --aim-warning: #9a6415;
   --aim-danger: #a13a2e;
-  --aim-radius: 10px;
+  --aim-radius: 4px;
   --aim-radius-sm: 6px;
   --aim-shadow: none;
+  --button-bg: #E3DCD6;
   color: var(--aim-ink);
   margin: 32px 0;
   line-height: 1.45;
@@ -233,17 +224,12 @@ body {
   overflow: hidden;
   border: 1px solid var(--aim-line);
   border-radius: 8px;
-  background:
-    linear-gradient(180deg,
-      rgba(255, 255, 255, 0.78),
-      rgba(241, 237, 231, 0.9)),
-    radial-gradient(circle at center,
-      rgba(227, 220, 214, 0.5),
-      transparent 44%),
-    #f8f6f3;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(241, 237, 231, 0.9)), radial-gradient(circle at center, rgba(227, 220, 214, 0.5), transparent 44%), #f8f6f3;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -moz-transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -ms-transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -o-transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .aim-generator-empty-panel {
@@ -322,7 +308,8 @@ body {
   border: 0 !important;
   background: transparent !important;
   aspect-ratio: auto !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
+  /* ← ye change karein */
   object-position: center !important;
   filter: var(--aim-preview-filter, none);
 }
@@ -971,7 +958,7 @@ body {
   color: var(--aim-accent);
   font-weight: 800;
   letter-spacing: -0.035em;
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  /* font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif; */
 }
 
 .aim-copy {
@@ -1287,14 +1274,15 @@ body {
   background: var(--aim-panel);
   box-shadow: var(--aim-shadow);
   cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  -webkit-border-radius: var(--aim-radius);
+  -moz-border-radius: var(--aim-radius);
+  -ms-border-radius: var(--aim-radius);
+  -o-border-radius: var(--aim-radius);
 }
 
 .aim-moodboard-card:hover {
-  border-color: #bd8c58;
+  border: 1px solid var(--aim-accent);
   box-shadow: 0 20px 45px rgba(35, 31, 26, 0.12);
   transform: translateY(-2px);
 }
@@ -1313,8 +1301,8 @@ body {
   height: 32px;
   place-items: center;
   border-radius: 50%;
-  background: #eadcc5;
-  color: #111;
+  background: var(--button-bg);
+  color: var(--aim-ink);
   font-weight: 800;
 }
 
@@ -1342,8 +1330,12 @@ body {
   grid-template-rows: repeat(2, minmax(110px, 1fr));
   gap: 4px;
   overflow: hidden;
-  border-radius: 7px;
-  background: #f5f2ed;
+  border-radius: var(--aim-radius);
+  background: var(--button-bg);
+  -webkit-border-radius: var(--aim-radius);
+  -moz-border-radius: var(--aim-radius);
+  -ms-border-radius: var(--aim-radius);
+  -o-border-radius: var(--aim-radius);
 }
 
 .aim-moodboard-card__mosaic img {
@@ -2172,7 +2164,7 @@ html[data-ai-cart-line-images="ready"] .aim-cart-line-image {
 .aim-community-detail__layout {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.72fr);
-  gap: 36px;
+  gap: 30px;
   align-items: start;
 }
 
@@ -2642,7 +2634,7 @@ html[data-ai-cart-line-images="ready"] .aim-cart-line-image {
 .aim-community-detail__layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
-  gap: 48px;
+  gap: 30px;
   align-items: start;
 }
 
@@ -3312,7 +3304,7 @@ html[data-ai-cart-line-images="ready"] .aim-cart-line-image {
 
 .aim-product-studio.is-prompt-screen .aim-product-studio__panel {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.58fr);
+  /* grid-template-columns: minmax(0, 1fr) minmax(260px, 0.58fr); */
   align-items: stretch;
   width: 100%;
   padding: clamp(12px, 1.6vw, 18px);
@@ -3331,7 +3323,8 @@ html[data-ai-cart-line-images="ready"] .aim-cart-line-image {
 .aim-prompt-panel-head {
   display: grid;
   gap: 8px;
-  max-width: 620px;
+  place-content: center;
+  text-align: center;
 }
 
 .aim-prompt-panel-head p {
@@ -3607,7 +3600,7 @@ html[data-ai-cart-line-images="ready"] .aim-cart-line-image {
 @media (max-width: 700px) {
   .aim-product-studio.is-prompt-screen {
     margin: 0 auto 44px;
-    padding: 10px 14px;
+    padding: 10px 0px;
   }
 
   .aim-product-studio.is-prompt-screen .aim-product-studio__panel {
@@ -3764,9 +3757,9 @@ html[data-ai-cart-line-images="ready"] .aim-cart-line-image {
 }
 
 .aim-orientation-btn.is-active {
-  border-color: var(--aim-accent);
-  background: var(--aim-accent);
-  color: #fff;
+  border-color: var(--button-bg);
+  background: var(--button-bg);
+  color: var(--aim-ink);
 }
 
 .aim-orientation-svg {
@@ -3777,7 +3770,7 @@ html[data-ai-cart-line-images="ready"] .aim-cart-line-image {
 /* Effect select buttons styling */
 .aim-effect-options {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -3799,15 +3792,15 @@ html[data-ai-cart-line-images="ready"] .aim-cart-line-image {
 }
 
 .aim-effect-btn.is-active {
-  border-color: var(--aim-accent);
-  background: var(--aim-accent);
-  color: #fff;
+  border-color: var(--button-bg);
+  background: var(--button-bg);
+  color: var(--aim-ink);
 }
 
 /* Action containers styling */
 .aim-preview-actions-vertical {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 12px;
   margin-top: 16px;
 }
