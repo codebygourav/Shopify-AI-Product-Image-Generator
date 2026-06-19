@@ -179,10 +179,10 @@
     const variantId = idInput?.value || "";
     const optionInputs = form
       ? Array.from(
-          form.querySelectorAll(
-            "select[name^='options'], select[name^='option'], input[name^='options']:checked, input[name^='option']:checked, fieldset input[type='radio']:checked",
-          ),
-        )
+        form.querySelectorAll(
+          "select[name^='options'], select[name^='option'], input[name^='options']:checked, input[name^='option']:checked, fieldset input[type='radio']:checked",
+        ),
+      )
       : [];
     const labels = optionInputs
       .map((input) => optionLabel(input))
@@ -717,8 +717,8 @@
     if (!response.ok) {
       throw new Error(
         data.description ||
-          data.message ||
-          "Could not add generated image to cart.",
+        data.message ||
+        "Could not add generated image to cart.",
       );
     }
 
@@ -798,7 +798,7 @@
       // Generator logic helper
       async function triggerGeneration(promptText, btnElement) {
         if (generationRequest) return;
-        
+
         const finalPrompt = promptText.trim();
         if (!finalPrompt) {
           status.textContent = "Enter an art direction first.";
@@ -807,7 +807,7 @@
 
         const variant = selectedVariant(form);
         const selectedOptions = [];
-        
+
         // Append chosen effect style to openai prompt
         let promptWithOptions = `${finalPrompt}\n\nCustom product: ${studioConfig.title || root.dataset.productTitle}.`;
         if (finalSelections.effect && finalSelections.effect !== "none") {
@@ -822,11 +822,11 @@
         btnElement.disabled = true;
         btnElement.classList.add("is-loading");
         btnElement.textContent = "Generating...";
-        
+
         toggleGeneratorImageSections(root, true);
         setStudioStep(root, "generating");
         status.textContent = "Moderating prompt and generating artwork...";
-        
+
         if (preview) {
           preview.classList.add("is-loading");
           preview.innerHTML = `
@@ -874,7 +874,7 @@
               finalSelections,
             )
           );
-          
+
           if (tweakPromptTextarea) tweakPromptTextarea.value = finalPrompt;
 
           await renderGeneratedPreview(
@@ -883,7 +883,7 @@
             finalPrompt,
           );
           applyPreviewPresentation(preview, finalSelections);
-          
+
           setStudioStep(root, "preview");
           status.textContent = "Artwork generated successfully. Choose to edit, reset, or finalize your frame options.";
         } catch (error) {
@@ -907,7 +907,7 @@
       // Step 2 Action Listeners
       previewFinaliseBtn?.addEventListener("click", () => {
         setStudioStep(root, "editor");
-        
+
         // Render Size Selector dropdown dynamically matching orientation
         renderSizeSelector(root, preview, finalSelections);
         applyPreviewPresentation(preview, finalSelections);
@@ -999,7 +999,7 @@
             throw new Error(data.error || "Could not save selected image.");
           }
           responseImage = data.image;
-          
+
           storePreview(root, {
             generation: responseImage,
             image: responseImage.imageUrl,
@@ -1037,11 +1037,11 @@
         finalSelections = metadataFinalSelections(selectedImage);
         root._setSelectedImage(selectedImage);
         root._setFinalSelections(finalSelections);
-        
+
         toggleGeneratorImageSections(root, true);
         setStudioStep(root, "preview");
         if (tweakPromptTextarea) tweakPromptTextarea.value = displayPrompt(selectedImage);
-        
+
         await renderGeneratedPreview(preview, selectedImage.imageUrl, displayPrompt(selectedImage));
         applyPreviewPresentation(preview, finalSelections);
       }
@@ -1380,11 +1380,11 @@
             <span>${escapeHtml(group.name)}</span>
             <select data-ai-option data-ai-option-name="${escapeHtml(group.name)}" data-ai-option-prompt="${escapeHtml(group.promptLabel || group.name)}">
               ${values
-                .map(
-                  (value, valueIndex) =>
-                    `<option value="${escapeHtml(value)}" ${valueIndex === 0 ? "selected" : ""}>${escapeHtml(value)}</option>`,
-                )
-                .join("")}
+            .map(
+              (value, valueIndex) =>
+                `<option value="${escapeHtml(value)}" ${valueIndex === 0 ? "selected" : ""}>${escapeHtml(value)}</option>`,
+            )
+            .join("")}
             </select>
           </label>
         `;
@@ -1416,41 +1416,41 @@
         <legend>Color Palette</legend>
         <div class="aim-color-options">
           ${[
-            ["warm neutral", "#ead8b9"],
-            ["olive and cream", "#78865b"],
-            ["blue gray", "#4f6f7f"],
-            ["soft gray", "#9ea5a9"],
-            ["charcoal", "#3b3d40"],
-          ]
-            .map(
-              ([value, color], index) => `
+        ["warm neutral", "#ead8b9"],
+        ["olive and cream", "#78865b"],
+        ["blue gray", "#4f6f7f"],
+        ["soft gray", "#9ea5a9"],
+        ["charcoal", "#3b3d40"],
+      ]
+        .map(
+          ([value, color], index) => `
                 <label class="aim-color-swatch ${index === 0 ? "is-active" : ""}">
                   <input type="radio" name="ai-color-palette" value="${escapeHtml(value)}" data-ai-option data-ai-option-name="Color Palette" data-ai-option-prompt="Color palette" ${index === 0 ? "checked" : ""}>
                   <span style="--aim-swatch:${escapeHtml(color)}"></span>
                 </label>`,
-            )
-            .join("")}
+        )
+        .join("")}
         </div>
       </fieldset>
       <fieldset class="aim-option-fieldset">
         <legend>Aspect Ratio</legend>
         <div class="aim-aspect-options">
           ${[
-            ["1:1", "Square"],
-            ["4:3", "Classic"],
-            ["3:2", "Landscape"],
-            ["16:9", "Wide"],
-            ["9:16", "Portrait"],
-          ]
-            .map(
-              ([value, label], index) => `
+        ["1:1", "Square"],
+        ["4:3", "Classic"],
+        ["3:2", "Landscape"],
+        ["16:9", "Wide"],
+        ["9:16", "Portrait"],
+      ]
+        .map(
+          ([value, label], index) => `
                 <label class="aim-aspect-option ${index === 0 ? "is-active" : ""}">
                   <input type="radio" name="ai-aspect-ratio" value="${escapeHtml(value)}" data-ai-option data-ai-option-name="Aspect Ratio" data-ai-option-prompt="Aspect ratio" ${index === 0 ? "checked" : ""}>
                   <span>${escapeHtml(value)}</span>
                   <small>${escapeHtml(label)}</small>
                 </label>`,
-            )
-            .join("")}
+        )
+        .join("")}
         </div>
       </fieldset>
     `;
@@ -1461,11 +1461,11 @@
     const promptIdeas = (templates || []).length
       ? templates
       : [
-          "Serene mountain retreat with soft morning light",
-          "Minimal gallery wall with neutral botanical artwork",
-          "Warm living room artwork in earthy tones",
-          "Coastal abstract print with calm natural colors",
-        ];
+        "Serene mountain retreat with soft morning light",
+        "Minimal gallery wall with neutral botanical artwork",
+        "Warm living room artwork in earthy tones",
+        "Coastal abstract print with calm natural colors",
+      ];
     root.innerHTML = promptIdeas
       .map(
         (template) =>
@@ -1592,7 +1592,7 @@
         options && options.mode === "user"
           ? "No generated AI images yet."
           : options &&
-              (options.mode === "inspiration" || options.mode === "pinterest")
+            (options.mode === "inspiration" || options.mode === "pinterest")
             ? "Generate your first artwork to see it here."
             : "No approved AI images yet.";
       return `<p class="aim-empty">${msg}</p>`;
@@ -1622,8 +1622,8 @@
         );
         const creator = escapeHtml(
           lead.customer?.displayName ||
-            lead.customer?.email?.split("@")[0] ||
-            "orvella.creator",
+          lead.customer?.email?.split("@")[0] ||
+          "orvella.creator",
         );
         const creatorId = escapeHtml(
           lead.customer?.shopifyCustomerId || lead.customerId || "",
@@ -1643,13 +1643,13 @@
             </div>
             <div class="aim-moodboard-card__mosaic aim-moodboard-card__mosaic--${mosaicCount}">
               ${group
-                .slice(0, 4)
-                .map(
-                  (image, index) => `
+            .slice(0, 4)
+            .map(
+              (image, index) => `
                     <img class="aim-moodboard-card__image-${index + 1}" src="${escapeHtml(toProxyImageUrl(image.imageUrl))}" alt="${escapeHtml(displayPrompt(image) || "Generated artwork")}" loading="lazy">
                   `,
-                )
-                .join("")}
+            )
+            .join("")}
             </div>
             <div class="aim-moodboard-card__meta">
               <strong>${title}</strong>
@@ -2076,8 +2076,8 @@
     );
     const creator = escapeHtml(
       activeImage.customer?.displayName ||
-        activeImage.customer?.email?.split("@")[0] ||
-        "Community member",
+      activeImage.customer?.email?.split("@")[0] ||
+      "Community member",
     );
     let detail = root.querySelector("[data-ai-community-detail]");
     if (!detail) {
@@ -2124,33 +2124,31 @@
           <p class="aim-modal__meta">@${creator}</p>
           <p class="aim-modal__prompt" data-ai-detail-prompt>${prompt}</p>
           <p class="aim-modal__options" data-ai-detail-options>${options}</p>
-          ${
-            optionGroups.length
-              ? `<div class="aim-modal__pickers">
+          ${optionGroups.length
+        ? `<div class="aim-modal__pickers">
                   ${optionGroups
-                    .map((group) => {
-                      const values = Array.isArray(group.values)
-                        ? group.values
-                        : [];
-                      return `
+          .map((group) => {
+            const values = Array.isArray(group.values)
+              ? group.values
+              : [];
+            return `
                         <label>
-                          <span>${escapeHtml(group.name)}</span>
+                          <span>${escapeHtml(group.name)} ritik</span>
                           <select data-ai-community-option data-ai-option-name="${escapeHtml(group.name)}">
                             ${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}
                           </select>
                         </label>
                       `;
-                    })
-                    .join("")}
+          })
+          .join("")}
                 </div>`
-              : ""
-          }
+        : ""
+      }
           <div class="aim-modal__actions">
             <button type="button" class="aim-button aim-button--outline" data-ai-detail-action="use">${useBtnLabel}</button>
             <button type="button" class="aim-button aim-button--filled" data-ai-detail-action="regenerate">Regenerate similar</button>
-            ${
-              isOwnImage
-                ? `
+            ${isOwnImage
+        ? `
               <button type="button" class="aim-button aim-button--outline" data-ai-detail-action="download" style="grid-column: span 2; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -2160,14 +2158,13 @@
                 Download Artwork
               </button>
             `
-                : ""
-            }
+        : ""
+      }
           </div>
         </div>
       </div>
-      ${
-        groupedImages.length > 1
-          ? `<section class="aim-creator-gallery">
+      ${groupedImages.length > 1
+        ? `<section class="aim-creator-gallery">
               <div class="aim-section-head">
                 <div>
                   <p class="aim-eyebrow">All artworks</p>
@@ -2176,17 +2173,17 @@
               </div>
               <div class="aim-creator-gallery__grid" data-ai-creator-grid>
                 ${groupedImages
-                  .map(
-                    (item, index) => `
+          .map(
+            (item, index) => `
                       <button type="button" class="aim-creator-gallery__item ${item.id === activeImage.id ? "is-active" : ""}" data-ai-creator-index="${index}" aria-label="Preview artwork ${index + 1}">
                         <img src="${escapeHtml(toProxyImageUrl(item.imageUrl))}" alt="${escapeHtml(displayPrompt(item) || "Generated artwork")}" loading="lazy">
                       </button>
                     `,
-                  )
-                  .join("")}
+          )
+          .join("")}
               </div>
             </section>`
-          : ""
+        : ""
       }
       <section class="aim-detail-reviews">
         <div class="aim-section-head">
@@ -2422,25 +2419,25 @@
     clearStoredPreview(root);
     setStudioStep(root, "prompt");
     toggleGeneratorImageSections(root, false);
-    
+
     const preview = root.querySelector("[data-ai-preview]");
     const status = root.querySelector("[data-ai-status]");
     const generateButton = root.querySelector("[data-ai-generate]");
     const promptInput = root.querySelector("[data-ai-prompt]");
     const tweakInput = root.querySelector("[data-ai-tweak-prompt]");
     const editPromptBox = root.querySelector("[data-ai-edit-prompt-box]");
-    
+
     if (promptInput) promptInput.value = "";
     if (tweakInput) tweakInput.value = "";
     if (editPromptBox) editPromptBox.hidden = true;
-    
+
     root.querySelectorAll("[data-ai-orientation-select]").forEach(btn => {
       btn.classList.toggle("is-active", btn.dataset.aiOrientationSelect === "portrait");
     });
     root.querySelectorAll("[data-ai-effect-select]").forEach(btn => {
       btn.classList.toggle("is-active", btn.dataset.aiEffectSelect === "none");
     });
-    
+
     if (preview) {
       preview.classList.remove("is-loading");
       preview.innerHTML = emptyPreviewStateHtml(root);
@@ -2625,8 +2622,8 @@
     );
     const creator = escapeHtml(
       image.customer?.displayName ||
-        image.customer?.email ||
-        "Community member",
+      image.customer?.email ||
+      "Community member",
     );
     const modal = document.createElement("div");
     modal.className = "aim-modal";
@@ -2639,15 +2636,14 @@
         <p class="aim-modal__meta">${creator}</p>
         <p class="aim-modal__prompt">${prompt}</p>
         <p class="aim-modal__options">${options}</p>
-        ${
-          optionGroups.length
-            ? `<div class="aim-modal__pickers">
+        ${optionGroups.length
+        ? `<div class="aim-modal__pickers">
                 ${optionGroups
-                  .map((group) => {
-                    const values = Array.isArray(group.values)
-                      ? group.values
-                      : [];
-                    return `
+          .map((group) => {
+            const values = Array.isArray(group.values)
+              ? group.values
+              : [];
+            return `
                       <label>
                         <span>${escapeHtml(group.name)}</span>
                         <select data-ai-community-option data-ai-option-name="${escapeHtml(group.name)}">
@@ -2655,18 +2651,17 @@
                         </select>
                       </label>
                     `;
-                  })
-                  .join("")}
+          })
+          .join("")}
               </div>`
-            : ""
-        }
+        : ""
+      }
         <div class="aim-modal__actions">
           <button type="button" class="aim-button  aim-button--outline" data-ai-modal-action="use">Use this image</button>
           <button type="button" class="aim-button aim-button--filled" data-ai-modal-action="regenerate">Regenerate</button>
         </div>
-        ${
-          root.dataset.customerId
-            ? `<form class="aim-modal__review" data-ai-modal-review>
+        ${root.dataset.customerId
+        ? `<form class="aim-modal__review" data-ai-modal-review>
                 <strong>Add a review</strong>
                 <select name="rating">
                   <option value="5">5 stars</option>
@@ -2679,8 +2674,8 @@
                 <button type="submit" class="aim-button aim-button--primary">Submit review</button>
                 <p class="aim-status" data-ai-modal-review-status></p>
               </form>`
-            : ""
-        }
+        : ""
+      }
       </div>
     `;
     modal
@@ -2842,10 +2837,10 @@
     if (sizePlaceholder) {
       sizePlaceholder.innerHTML = `
         ${renderEditorSelect("orientation", current.orientation, [
-          { value: "landscape", label: "Landscape" },
-          { value: "portrait", label: "Portrait" },
-          { value: "square", label: "Square" },
-        ])}
+        { value: "landscape", label: "Landscape" },
+        { value: "portrait", label: "Portrait" },
+        { value: "square", label: "Square" },
+      ])}
         ${renderEditorSelect("size", current.size, sizeEditorOptions(current.orientation))}
       `;
     }
@@ -2863,15 +2858,15 @@
       thumbsContainer.innerHTML = `
         <div class="aim-draft-editor__variants aim-draft-masonry">
           ${(variants || [])
-            .slice(0, 5)
-            .map(
-              (variant, index) => `
+          .slice(0, 5)
+          .map(
+            (variant, index) => `
                 <button type="button" class="aim-draft-thumb ${variant.imageUrl === selectedUrl ? "is-active" : ""}" data-ai-draft-index="${index}" aria-label="Draft ${index + 1}">
                   <img src="${escapeHtml(toProxyImageUrl(variant.imageUrl))}" alt="Draft ${index + 1}">
                 </button>
               `,
-            )
-            .join("")}
+          )
+          .join("")}
         </div>
       `;
 
@@ -2978,16 +2973,16 @@
         <span>${escapeHtml(editorOptionGroupLabel(name))}</span>
         <div class="aim-segment-group" data-ai-segment-group="${escapeHtml(name)}">
           ${options
-            .map((option) => {
-              const optionValue = option.value;
-              const label = option.label || labelize(optionValue);
-              return `
+        .map((option) => {
+          const optionValue = option.value;
+          const label = option.label || labelize(optionValue);
+          return `
                 <button type="button" class="aim-segment ${optionValue === value ? "is-active" : ""}" data-ai-segment="${escapeHtml(name)}" data-ai-value="${escapeHtml(optionValue)}">
                   ${escapeHtml(label)}
                 </button>
               `;
-            })
-            .join("")}
+        })
+        .join("")}
         </div>
       </div>
     `;
@@ -2999,11 +2994,11 @@
         <span>${escapeHtml(editorOptionGroupLabel(name))}</span>
         <select data-ai-select-control="${escapeHtml(name)}">
           ${options
-            .map(
-              (option) =>
-                `<option value="${escapeHtml(option.value)}" ${option.value === value ? "selected" : ""}>${escapeHtml(option.label || labelize(option.value))}</option>`,
-            )
-            .join("")}
+        .map(
+          (option) =>
+            `<option value="${escapeHtml(option.value)}" ${option.value === value ? "selected" : ""}>${escapeHtml(option.label || labelize(option.value))}</option>`,
+        )
+        .join("")}
         </select>
       </label>
     `;
