@@ -208,7 +208,6 @@ s-link.active, s-app-nav a[aria-current="page"] {
 .aim-metric-title {
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
   color: var(--orv-muted);
   letter-spacing: 0.07em;
   margin-bottom: 8px;
@@ -303,7 +302,6 @@ th {
   color: var(--orv-brand);
   font-size: 11px;
   font-weight: 800;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 14px 16px;
   border-bottom: 1px solid var(--orv-line);
@@ -328,7 +326,6 @@ tr:hover td {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 

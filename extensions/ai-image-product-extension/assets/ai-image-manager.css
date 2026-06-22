@@ -60,7 +60,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
-  align-items: end;
+  align-items: center;
   margin-bottom: 8px;
 }
 
@@ -178,6 +178,9 @@ body {
 }
 
 .aim-product-studio__panel {
+  height: 100% !important;
+  min-height: 700px !important;
+  max-height: 700px !important;
   overflow-y: visible;
   overflow-x: hidden;
   padding: 28px;
@@ -186,6 +189,10 @@ body {
   background: var(--aim-panel);
   box-shadow: var(--aim-shadow);
   box-sizing: border-box;
+  scrollbar-width: none !important;
+
+  -ms-overflow-style: none !important;
+
 }
 
 .aim-textarea,
@@ -209,6 +216,10 @@ body {
 
 .aim-product-studio__media {
   display: grid;
+  min-height: 700px !important;
+  /* Same as left */
+  max-height: 700px !important;
+  /* Same as left */
   gap: 14px;
   min-height: 0;
   position: sticky;
@@ -222,7 +233,11 @@ body {
 .aim-product-studio__preview {
   position: relative;
   width: 100%;
-  min-height: clamp(560px, 58vw, 780px);
+  height: 100% !important;
+  min-height: 700px !important;
+  max-height: 700px !important;
+  aspect-ratio: auto !important;
+  /* min-height: clamp(560px, 58vw, 827px); */
   overflow: hidden;
   border: 1px solid var(--aim-line);
   border-radius: 8px;
@@ -506,7 +521,6 @@ body {
   color: var(--aim-muted);
   font-size: 12px;
   font-weight: 800;
-  text-transform: uppercase;
 }
 
 .aim-draft-editor__head strong {
@@ -570,7 +584,6 @@ body {
   color: var(--aim-muted);
   font-size: 12px;
   font-weight: 800;
-  text-transform: uppercase;
 }
 
 .aim-select-field select {
@@ -614,7 +627,6 @@ body {
   color: var(--aim-muted);
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .aim-segment-group {
@@ -976,7 +988,6 @@ body {
   color: var(--aim-accent);
   font-size: 13px;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .aim-heading {
@@ -1023,7 +1034,6 @@ body {
   line-height: 1.7;
   color: #6f6655;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .aim-variant-summary>div {
@@ -1286,7 +1296,7 @@ body {
 
 .aim-moodboard-grid {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  align-items: start;
+  /* align-items: start; */
 }
 
 .aim-moodboard-card {
@@ -2751,7 +2761,6 @@ img.aim-image-error {
   color: var(--aim-muted);
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .aim-modal__pickers select {
@@ -3363,6 +3372,10 @@ img.aim-image-error {
 .aim-product-studio.is-prompt-screen .aim-product-studio__panel {
   display: grid !important;
   /* grid-template-columns: minmax(0, 1fr) minmax(260px, 0.58fr); */
+  height: 100% !important;
+  min-height: 632px !important;
+  max-height: 638px !important;
+  overflow-y: auto !important;
   align-items: stretch;
   width: 100%;
   padding: clamp(12px, 1.6vw, 18px);
@@ -3391,7 +3404,6 @@ img.aim-image-error {
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .aim-prompt-panel-head h2 {
@@ -3780,7 +3792,6 @@ img.aim-image-error {
   color: var(--aim-muted);
   font-size: 12px;
   font-weight: 800;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
@@ -4179,9 +4190,12 @@ img.aim-image-error {
   top: 32px;
 }
 
+
 .aim-product-studio.is-prompt-screen .aim-generator-empty-panel,
 .aim-product-studio.is-prompt-screen .aim-product-studio__preview {
-  min-height: 560px;
+  min-height: 622px !important;
+  max-height: 639px !important;
+  height: 100% !important;
   border: 1px solid rgba(39, 35, 32, 0.08);
   border-radius: 14px;
   background:
@@ -4668,6 +4682,8 @@ img.aim-image-error {
   min-width: 0;
   position: static !important;
   top: auto !important;
+  min-height: 700px !important;
+  max-height: 700px !important;
 }
 
 .aim-product-studio.is-prompt-screen .aim-generator-empty-panel:not([hidden]) {
@@ -4676,6 +4692,9 @@ img.aim-image-error {
 
 .aim-product-studio.is-prompt-screen .aim-product-studio__panel {
   max-width: none !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+
 }
 
 .aim-product-studio.is-prompt-screen .aim-studio-auth-strip,
@@ -4827,6 +4846,7 @@ img.aim-image-error {
     -o-border-radius: 4px;
   }
 
+
   .aim-product-studio.is-prompt-screen .aim-studio-topbar__main,
   .aim-product-studio.is-preview-screen .aim-studio-topbar__main,
   .aim-product-studio.is-editor-screen .aim-studio-topbar__main,
@@ -4847,8 +4867,6 @@ img.aim-image-error {
   .aim-product-studio.is-generating .aim-studio-title {
     display: block !important;
     font-size: 24px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
   }
 
   .aim-product-studio.is-prompt-screen .aim-studio-description,
@@ -5057,6 +5075,10 @@ img.aim-image-error {
     height: auto !important;
     max-width: 100% !important;
     max-height: 100% !important;
+  }
+
+  .aim-product-studio.is-prompt-screen .aim-studio-usage span {
+    font-size: 14px;
   }
 
   .aim-preview-actions-vertical {
@@ -5858,7 +5880,6 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
   font-size: 16px;
   font-weight: 800;
   line-height: 1;
-  text-transform: uppercase;
 }
 
 .aim-review__content {
@@ -6125,7 +6146,6 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
   font-size: 12px;
   font-weight: 700;
   color: var(--aim-muted);
-  text-transform: uppercase;
   letter-spacing: 0.5px;
   text-align: left;
 }
@@ -6268,5 +6288,75 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
 
   .aim-product-studio__preview {
     min-height: 480px !important;
+  }
+}
+
+/* ==========================================================
+   HIDE SCROLLBAR FOR ALL AI STUDIO PANELS
+   ========================================================== */
+
+/* ---------- DESKTOP ---------- */
+.aim-product-studio__panel,
+.aim-prompt-content,
+.aim-preview-controls-container,
+.aim-editor-controls-container,
+.aim-product-studio.is-prompt-screen .aim-product-studio__panel,
+.aim-product-studio.is-preview-screen .aim-product-studio__panel,
+.aim-product-studio.is-editor-screen .aim-product-studio__panel {
+  scrollbar-width: none !important;
+  /* Firefox */
+  -ms-overflow-style: none !important;
+  /* IE/Edge */
+  overflow-y: auto !important;
+  /* Scroll allow, bar hide */
+}
+
+/* Chrome/Safari/Opera */
+.aim-product-studio__panel::-webkit-scrollbar,
+.aim-prompt-content::-webkit-scrollbar,
+.aim-preview-controls-container::-webkit-scrollbar,
+.aim-editor-controls-container::-webkit-scrollbar,
+.aim-product-studio.is-prompt-screen .aim-product-studio__panel::-webkit-scrollbar,
+.aim-product-studio.is-preview-screen .aim-product-studio__panel::-webkit-scrollbar,
+.aim-product-studio.is-editor-screen .aim-product-studio__panel::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* ---------- MOBILE ---------- */
+@media (max-width: 989px) {
+
+  .aim-product-studio.is-prompt-screen .aim-product-studio__panel,
+  .aim-product-studio.is-preview-screen .aim-product-studio__panel,
+  .aim-product-studio.is-editor-screen .aim-product-studio__panel {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    overflow-y: auto !important;
+  }
+
+  .aim-product-studio.is-prompt-screen .aim-product-studio__panel::-webkit-scrollbar,
+  .aim-product-studio.is-preview-screen .aim-product-studio__panel::-webkit-scrollbar,
+  .aim-product-studio.is-editor-screen .aim-product-studio__panel::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+/* ---------- SMALL PHONES ---------- */
+@media (max-width: 700px) {
+
+  .aim-product-studio.is-prompt-screen .aim-product-studio__panel,
+  .aim-product-studio.is-preview-screen .aim-product-studio__panel,
+  .aim-product-studio.is-editor-screen .aim-product-studio__panel {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    overflow-y: auto !important;
+  }
+
+  .aim-product-studio.is-prompt-screen .aim-product-studio__panel::-webkit-scrollbar,
+  .aim-product-studio.is-preview-screen .aim-product-studio__panel::-webkit-scrollbar,
+  .aim-product-studio.is-editor-screen .aim-product-studio__panel::-webkit-scrollbar {
+    display: none !important;
   }
 }
