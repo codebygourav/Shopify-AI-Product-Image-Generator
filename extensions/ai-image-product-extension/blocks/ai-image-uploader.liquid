@@ -1,0 +1,476 @@
+{{ 'ai-image-manager.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'ai-image-manager.js' | asset_url }}" defer></script>
+
+<div class="aim-pod-uploader"
+  id="aim-pod-block"
+  data-ai-uploader-initialized="false"
+  data-api-base="{{ block.settings.api_base_url | default: '/apps/ai-image' }}"
+  data-shop="{{ shop.permanent_domain }}"
+  data-customer-id="{{ customer.id }}"
+  data-customer-email="{{ customer.email }}"
+  data-checkout-variant-id="{{ block.settings.checkout_variant_id }}"
+>
+  <div class="aim-pod-uploader__grid">
+    
+    <!-- LEFT PANEL: Controls -->
+    <div class="aim-pod-uploader__controls">
+      <p class="aim-eyebrow">{{ block.settings.eyebrow | default: "Custom Printing" }}</p>
+      <h2 class="aim-heading">{{ block.settings.heading | default: "Print your own memories" }}</h2>
+      <p class="aim-copy">{{ block.settings.description | default: "Upload your favorite photos and customize the frame style, size, and print medium to make it yours." }}</p>
+
+      <!-- Dropzone -->
+      <div class="aim-pod-uploader__dropzone" id="aim-dropzone">
+        <input type="file" id="aim-file-input" accept="image/png, image/jpeg, image/webp" style="display: none;" />
+        <div class="aim-pod-uploader__dropzone-content" id="aim-dropzone-content">
+          <svg class="aim-upload-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span class="aim-upload-text">Choose or Drag Image</span>
+          <span class="aim-upload-subtext">Supports JPG, PNG or WEBP up to 25MB.</span>
+        </div>
+        <div class="aim-pod-uploader__file-info" id="aim-file-info" style="display: none;">
+          <svg class="aim-file-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <span class="aim-file-name" id="aim-file-name">filename.png</span>
+          <button type="button" class="aim-remove-file-btn" id="aim-remove-btn">Remove</button>
+        </div>
+      </div>
+
+      <!-- Size Selection -->
+      <div class="aim-pod-uploader__option-group">
+        <label for="aim-size-select" class="aim-pod-uploader__label">Select Print Size</label>
+        <select id="aim-size-select" class="aim-pod-uploader__select">
+          <option value="12x16" data-orientation="portrait">12 x 16 inch (Portrait)</option>
+          <option value="16x12" data-orientation="landscape">16 x 12 inch (Landscape)</option>
+          <option value="12x12" data-orientation="square">12 x 12 inch (Square)</option>
+          <option value="8x12" data-orientation="portrait">8 x 12 inch (Portrait)</option>
+          <option value="12x8" data-orientation="landscape">12 x 8 inch (Landscape)</option>
+          <option value="16x20" data-orientation="portrait">16 x 20 inch (Portrait)</option>
+          <option value="20x16" data-orientation="landscape">20 x 16 inch (Landscape)</option>
+        </select>
+      </div>
+
+      <!-- Frame Selection -->
+      <div class="aim-pod-uploader__option-group">
+        <label class="aim-pod-uploader__label">Frame Style</label>
+        <div class="aim-pod-uploader__frame-buttons">
+          <button type="button" class="aim-pod-uploader__frame-btn is-active" data-frame-color="oak" data-label="Wood">Wood</button>
+          <button type="button" class="aim-pod-uploader__frame-btn" data-frame-color="black" data-label="Black">Black</button>
+          <button type="button" class="aim-pod-uploader__frame-btn" data-frame-color="white" data-label="White">White</button>
+        </div>
+      </div>
+
+      <!-- Print Type Selection -->
+      <div class="aim-pod-uploader__option-group">
+        <label for="aim-paper-select" class="aim-pod-uploader__label">Print Type</label>
+        <select id="aim-paper-select" class="aim-pod-uploader__select">
+          <option value="Premium Matte Paper">Premium Matte Paper</option>
+          <option value="Fine Art Paper">Fine Art Paper</option>
+          <option value="Canvas Wrap">Canvas Wrap</option>
+        </select>
+      </div>
+
+      <!-- Action Button -->
+      <button type="button" class="aim-button aim-button--primary aim-pod-uploader__submit" id="aim-submit-btn" disabled>
+        Upload & Add to Cart
+      </button>
+      
+      <!-- Status Message -->
+      <p class="aim-pod-uploader__status" id="aim-status-message"></p>
+    </div>
+
+    <!-- RIGHT PANEL: Preview -->
+    <div class="aim-pod-uploader__preview-panel">
+      <div class="aim-product-studio__preview" id="aim-preview-box" data-ai-orientation="portrait" data-ai-size="12x16" data-ai-frame="gallery" data-ai-frame-color="oak" data-ai-effect="none">
+        <div class="aim-preview-stage">
+          <div class="aim-preview-frame">
+            <div class="aim-preview-mat">
+              <img id="aim-preview-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="display: none;" width="800" height="800" alt="Print Preview" />
+              <div class="aim-pod-uploader__preview-empty" id="aim-preview-empty">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="aim-cloud-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <h3>Your preview appears here</h3>
+                <p>Once you choose or drag your photo, it will instantly show in the frame preview. The same image is sent to production when added to the cart.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  document.addEventListener("DOMContentLoaded", function() {
+    const root = document.getElementById("aim-pod-block");
+    if (!root || root.dataset.aiUploaderInitialized === "true") return;
+    root.dataset.aiUploaderInitialized = "true";
+
+    const dropzone = document.getElementById("aim-dropzone");
+    const fileInput = document.getElementById("aim-file-input");
+    const dropzoneContent = document.getElementById("aim-dropzone-content");
+    const fileInfo = document.getElementById("aim-file-info");
+    const fileNameText = document.getElementById("aim-file-name");
+    const removeBtn = document.getElementById("aim-remove-btn");
+    const sizeSelect = document.getElementById("aim-size-select");
+    const paperSelect = document.getElementById("aim-paper-select");
+    const submitBtn = document.getElementById("aim-submit-btn");
+    const statusMsg = document.getElementById("aim-status-message");
+    const previewBox = document.getElementById("aim-preview-box");
+    const previewImg = document.getElementById("aim-preview-img");
+    const previewEmpty = document.getElementById("aim-preview-empty");
+    const frameButtons = root.querySelectorAll(".aim-pod-uploader__frame-btn");
+
+    let selectedFile = null;
+    let currentPreviewUrl = null;
+    let selectedFrameColor = "oak";
+    let selectedFrameText = "Wood";
+
+    // Set up file selection trigger
+    dropzone.addEventListener("click", function(e) {
+      if (e.target !== removeBtn && !removeBtn.contains(e.target)) {
+        fileInput.click();
+      }
+    });
+
+    fileInput.addEventListener("change", function() {
+      if (fileInput.files && fileInput.files[0]) {
+        handleFileSelection(fileInput.files[0]);
+      }
+    });
+
+    // Drag and drop event listeners
+    ["dragenter", "dragover"].forEach(eventName => {
+      dropzone.addEventListener(eventName, function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add("is-dragging");
+      }, false);
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+      dropzone.addEventListener(eventName, function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove("is-dragging");
+      }, false);
+    });
+
+    dropzone.addEventListener("drop", function(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files[0]) {
+        handleFileSelection(files[0]);
+      }
+    });
+
+    function handleFileSelection(file) {
+      if (!file.type.startsWith("image/")) {
+        showStatus("Please choose an image file (PNG, JPG, or WEBP).", "error");
+        return;
+      }
+
+      selectedFile = file;
+      fileNameText.textContent = file.name + " (" + formatFileSize(file.size) + ")";
+      
+      // Update preview UI
+      dropzoneContent.style.display = "none";
+      fileInfo.style.display = "flex";
+      submitBtn.removeAttribute("disabled");
+
+      // Generate local object URL for instant previewing
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+      }
+      currentPreviewUrl = URL.createObjectURL(file);
+      previewImg.src = currentPreviewUrl;
+      previewImg.style.display = "block";
+      previewEmpty.style.display = "none";
+
+      showStatus("");
+    }
+
+    // Remove file button
+    removeBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      resetFileSelection();
+    });
+
+    function resetFileSelection() {
+      selectedFile = null;
+      fileInput.value = "";
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+        currentPreviewUrl = null;
+      }
+      previewImg.src = "";
+      previewImg.style.display = "none";
+      previewEmpty.style.display = "flex";
+      
+      dropzoneContent.style.display = "flex";
+      fileInfo.style.display = "none";
+      submitBtn.setAttribute("disabled", "true");
+      showStatus("");
+    }
+
+    // Handle dropdown options change
+    sizeSelect.addEventListener("change", function() {
+      const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+      const orientation = selectedOption.getAttribute("data-orientation") || "portrait";
+      const sizeValue = sizeSelect.value;
+
+      previewBox.dataset.aiSize = sizeValue;
+      previewBox.dataset.aiOrientation = orientation;
+    });
+
+    // Handle frame button click
+    frameButtons.forEach(btn => {
+      btn.addEventListener("click", function() {
+        frameButtons.forEach(b => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
+
+        selectedFrameColor = btn.getAttribute("data-frame-color");
+        selectedFrameText = btn.getAttribute("data-label");
+        previewBox.dataset.aiFrameColor = selectedFrameColor;
+      });
+    });
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Submit handler
+    submitBtn.addEventListener("click", async function() {
+      if (!selectedFile) return;
+
+      const originalText = "Upload & Add to Cart";
+      submitBtn.setAttribute("disabled", "true");
+      submitBtn.classList.add("is-loading");
+      submitBtn.textContent = "Uploading image...";
+      showStatus("Uploading artwork to server...", "loading");
+
+      try {
+        // 1. Convert file to base64
+        showStatus("Preparing image payload...", "loading");
+        const base64Data = await readFileAsDataURL(selectedFile);
+
+        // 2. Upload to backend
+        showStatus("Uploading artwork to server...", "loading");
+        const uploadBase = root.dataset.apiBase;
+        const uploadRes = await fetch(apiUrl(uploadBase, "/api/upload-image"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            file: base64Data,
+            filename: selectedFile.name
+          })
+        });
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errData.error || "Upload failed with status " + uploadRes.status);
+        }
+
+        const uploadData = await uploadRes.json();
+        if (!uploadData.success || !uploadData.url) {
+          throw new Error(uploadData.error || "Failed to retrieve public file URL.");
+        }
+
+        const publicUrl = uploadData.url;
+
+        // 2. Save customer image metadata
+        showStatus("Saving custom artwork profile...", "loading");
+        const selectedSizeOption = sizeSelect.options[sizeSelect.selectedIndex];
+        const selectedSizeText = selectedSizeOption.textContent.split(" (")[0];
+        const selectedPaperText = paperSelect.value;
+        const selectedOrientation = selectedSizeOption.getAttribute("data-orientation") || "portrait";
+
+        const saveRes = await fetch(apiUrl(uploadBase, "/api/customer-images"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            shop: root.dataset.shop,
+            customerId: root.dataset.customerId || null,
+            customerEmail: root.dataset.customerEmail || null,
+            intent: "select-cart",
+            generationId: null,
+            generation: {
+              imageUrl: publicUrl,
+              prompt: "Uploaded print-on-demand artwork: " + selectedFile.name,
+              visibility: "PRIVATE",
+              pendingImage: {
+                imageUrl: publicUrl
+              }
+            },
+            finalSelections: {
+              size: selectedSizeText,
+              frame: "gallery",
+              frameColor: selectedFrameColor,
+              effect: "none"
+            }
+          })
+        });
+
+        if (!saveRes.ok) {
+          const errData = await saveRes.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to save customer image record.");
+        }
+
+        const saveData = await saveRes.json();
+        if (!saveData.success || !saveData.image) {
+          throw new Error(saveData.error || "Failed to finalize image creation.");
+        }
+
+        const responseImage = saveData.image;
+
+        // 3. Add to Shopify Cart
+        showStatus("Adding item to cart...", "loading");
+
+        // Sync variant ID
+        let variantId = root.dataset.checkoutVariantId || "";
+
+        // Check if there is a native Shopify product form on the page to search for variant
+        const nativeForm = document.querySelector("form[action*='/cart/add']");
+        if (nativeForm) {
+          const idInput = nativeForm.querySelector("[name='id']");
+          if (idInput?.value) {
+            variantId = idInput.value;
+          }
+        }
+
+        if (!variantId) {
+          throw new Error("No product variant was found. Please configure a Variant ID in the section settings.");
+        }
+
+        const properties = {
+          "_AI Image URL": responseImage.imageUrl,
+          "_AI Generation ID": responseImage.id,
+          "_AI Prompt": "Custom print-on-demand artwork upload: " + selectedFile.name,
+          "_AI Product Variant": selectedSizeText,
+          "_AI Custom Options": `Size: ${selectedSizeText}, Frame: ${selectedFrameText}, Paper: ${selectedPaperText}`,
+          "_AI Final Options": `Frame: ${selectedFrameText}`,
+          "_AI Final Selections": JSON.stringify({
+            size: selectedSizeText,
+            frame: "gallery",
+            frameColor: selectedFrameColor,
+            effect: "none",
+            orientation: selectedOrientation
+          }),
+          "_AI Cart Token": `${responseImage.id || "upload"}-${Date.now()}`
+        };
+
+        const cartRes = await fetch("/cart/add.js", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            id: Number(variantId),
+            quantity: 1,
+            properties: properties
+          })
+        });
+
+        if (!cartRes.ok) {
+          const cartErr = await cartRes.json().catch(() => ({}));
+          throw new Error(cartErr.description || cartErr.message || "Failed adding item to cart.");
+        }
+
+        // Redirect to Cart page
+        showStatus("Opening cart page...", "loading");
+        window.location.replace("/cart");
+
+      } catch (err) {
+        showStatus(err.message, "error");
+        submitBtn.removeAttribute("disabled");
+        submitBtn.classList.remove("is-loading");
+        submitBtn.textContent = originalText;
+      }
+    });
+
+    function showStatus(msg, type) {
+      statusMsg.textContent = msg;
+      statusMsg.className = "aim-pod-uploader__status";
+      if (type === "error") {
+        statusMsg.classList.add("aim-status-error");
+      } else if (type === "loading") {
+        statusMsg.classList.add("aim-status-loading");
+      }
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return "0 Bytes";
+      const k = 1024;
+      const sizes = ["Bytes", "KB", "MB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+    }
+
+    function apiUrl(base, path) {
+      const normalizedBase = String(base || "/apps/ai-image").replace(/\/$/, "");
+      const rawPath = String(path || "");
+      const isDirectAppUrl = /^https?:\/\//i.test(normalizedBase);
+      const normalizedPath =
+        isDirectAppUrl && !/\/api$/i.test(normalizedBase)
+          ? rawPath
+          : rawPath.replace(/^\/api\//, "/");
+      return `${normalizedBase}${normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`}`;
+    }
+
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Orvella POD Uploader",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Custom Printing"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Print your own memories"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Upload your favorite photos and customize the frame style, size, and print medium to make it yours."
+    },
+    {
+      "type": "url",
+      "id": "api_base_url",
+      "label": "App API base URL"
+    },
+    {
+      "type": "text",
+      "id": "checkout_variant_id",
+      "label": "Checkout variant ID override"
+    }
+  ]
+}
+{% endschema %}
