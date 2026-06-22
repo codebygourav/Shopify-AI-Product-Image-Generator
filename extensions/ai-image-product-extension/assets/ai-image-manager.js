@@ -295,7 +295,9 @@
   async function enhanceCartLineImages() {
     if (isEnhancing) return;
     isEnhancing = true;
-    document.documentElement.dataset.aiCartLineImages = "loading";
+    if (document.documentElement.dataset.aiCartLineImages !== "ready") {
+      document.documentElement.dataset.aiCartLineImages = "loading";
+    }
 
     let cart;
     try {
@@ -325,20 +327,35 @@
       const line = findCartLine(item, index);
       if (!line) return;
 
+      hideVisibleAiCartProperties(line);
+
       let image = line.querySelector("img");
       if (image) {
-        const newImage = document.createElement("img");
-        newImage.className = "aim-cart-line-image";
-        newImage.src = toProxyImageUrl(imageUrl);
-        newImage.alt = prompt;
-
-        const picture = image.closest("picture");
-        if (picture) {
-          picture.replaceWith(newImage);
+        const proxyUrl = toProxyImageUrl(imageUrl);
+        const absoluteProxyUrl = absoluteStorefrontUrl(proxyUrl);
+        if (image.classList.contains("aim-cart-line-image") && (image.src === absoluteProxyUrl || image.getAttribute("src") === proxyUrl)) {
+          // Already enhanced!
         } else {
-          image.replaceWith(newImage);
+          const newImage = document.createElement("img");
+          newImage.className = "aim-cart-line-image aim-image-loading";
+          newImage.alt = prompt;
+          newImage.onload = () => {
+            newImage.classList.remove("aim-image-loading");
+          };
+          newImage.onerror = () => {
+            newImage.classList.remove("aim-image-loading");
+            newImage.classList.add("aim-image-error");
+          };
+          newImage.src = proxyUrl;
+
+          const picture = image.closest("picture");
+          if (picture) {
+            picture.replaceWith(newImage);
+          } else {
+            image.replaceWith(newImage);
+          }
+          image = newImage;
         }
-        image = newImage;
       } else {
         image = createCartLineImage(line, imageUrl, prompt);
       }
@@ -392,7 +409,52 @@
     });
     document.documentElement.dataset.aiCartLineImages = "ready";
     enhanceCartPreviewBlocks();
+    hideVisibleAiCartProperties(document);
     isEnhancing = false;
+  }
+
+  function hideVisibleAiCartProperties(root) {
+    const labels = [
+      "_AI Image URL",
+      "_AI Generation ID",
+      "_AI Prompt",
+      "_AI Product Variant",
+      "_AI Custom Options",
+      "_AI Final Options",
+      "_AI Final Selections",
+      "_AI Cart Token",
+      "AI Image URL",
+      "AI Image Preview",
+      "AI Generated Image",
+      "AI Prompt",
+      "AI Options",
+    ];
+
+    const selector = [
+      "li",
+      "p",
+      "dd",
+      "dt",
+      ".product-option",
+      "[class*='property']",
+      "[class*='option']",
+    ].join(",");
+
+    root.querySelectorAll(selector).forEach((element) => {
+      const text = element.textContent || "";
+      const hasAiLabel = labels.some((label) => text.includes(label));
+      const hasAiUrl = /\/ai-generated\/[^\s]+/i.test(text);
+      if (!hasAiLabel && !hasAiUrl) return;
+      element.hidden = true;
+      element.style.display = "none";
+      if (hasAiLabel) {
+        const sibling = element.nextElementSibling;
+        if (sibling && /\/ai-generated\/|Attached|^\s*https?:\/\//i.test(sibling.textContent || "")) {
+          sibling.hidden = true;
+          sibling.style.display = "none";
+        }
+      }
+    });
   }
 
   function enhanceStaticImages() {
@@ -438,10 +500,22 @@
           if (container) {
             const img = container.querySelector("img");
             if (img) {
-              img.src = toProxyImageUrl(imageUrl);
-              img.removeAttribute("srcset");
-              img.removeAttribute("data-srcset");
-              img.sizes = "";
+              const proxyUrl = toProxyImageUrl(imageUrl);
+              const absoluteProxyUrl = absoluteStorefrontUrl(proxyUrl);
+              if (img.src !== absoluteProxyUrl && img.getAttribute("src") !== proxyUrl) {
+                img.classList.add("aim-image-loading");
+                img.onload = () => {
+                  img.classList.remove("aim-image-loading");
+                };
+                img.onerror = () => {
+                  img.classList.remove("aim-image-loading");
+                  img.classList.add("aim-image-error");
+                };
+                img.src = proxyUrl;
+                img.removeAttribute("srcset");
+                img.removeAttribute("data-srcset");
+                img.sizes = "";
+              }
 
               if (
                 window.location.pathname.includes("/order") ||
@@ -598,9 +672,16 @@
 
   function createCartLineImage(line, imageUrl, prompt) {
     const image = document.createElement("img");
-    image.className = "aim-cart-line-image";
-    image.src = toProxyImageUrl(imageUrl);
+    image.className = "aim-cart-line-image aim-image-loading";
     image.alt = prompt;
+    image.onload = () => {
+      image.classList.remove("aim-image-loading");
+    };
+    image.onerror = () => {
+      image.classList.remove("aim-image-loading");
+      image.classList.add("aim-image-error");
+    };
+    image.src = toProxyImageUrl(imageUrl);
 
     const mediaCell =
       line.querySelector(
@@ -676,10 +757,6 @@
       "_AI Final Options": finalOptions,
       "_AI Final Selections": JSON.stringify(selections),
       "_AI Cart Token": `${image.id || "draft"}-${Date.now()}`,
-      "AI Prompt": prompt,
-      "AI Options": finalOptions || options,
-      "AI Image Preview": previewUrl,
-      "AI Generated Image": "Attached",
     };
 
     return Object.fromEntries(
