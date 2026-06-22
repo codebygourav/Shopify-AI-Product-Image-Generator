@@ -34,7 +34,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     selectedImageId ? getAiImageGeneration(admin, selectedImageId) : null,
   ]);
   const images = (
-    rawImages.filter((image) => image !== null && isFinalized(image)) as MediaImage[]
+    rawImages.filter((image) => {
+      if (image === null || !isFinalized(image)) return false;
+      try {
+        const parsed = typeof image.metadata === "string" ? JSON.parse(image.metadata) : image.metadata;
+        if (parsed?.isPod === true || parsed?.finalSelections?.isPod === true) {
+          return false;
+        }
+      } catch {}
+      return true;
+    }) as MediaImage[]
   ).map(withAdminImageUrl);
 
   return {

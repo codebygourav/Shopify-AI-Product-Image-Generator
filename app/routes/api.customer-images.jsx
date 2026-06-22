@@ -50,7 +50,17 @@ export async function loader({ request }) {
 
     // Profile gallery: show all user images except rejected (no approval required), and only finalized ones
     const filteredImages = images
-      .filter((img) => img.moderationStatus !== "REJECTED" && isFinalized(img))
+      .filter((img) => {
+        if (img.moderationStatus === "REJECTED") return false;
+        if (!isFinalized(img)) return false;
+        try {
+          const meta = typeof img.metadata === "string" ? JSON.parse(img.metadata) : img.metadata;
+          if (meta?.isPod === true || meta?.finalSelections?.isPod === true) {
+            return false;
+          }
+        } catch {}
+        return true;
+      })
       .slice(0, take);
 
     return corsJson({ success: true, images: filteredImages });

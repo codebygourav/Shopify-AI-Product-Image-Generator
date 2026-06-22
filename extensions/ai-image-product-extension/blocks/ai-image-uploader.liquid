@@ -322,7 +322,9 @@
               size: selectedSizeText,
               frame: "gallery",
               frameColor: selectedFrameColor,
-              effect: "none"
+              effect: "none",
+              isPod: true,
+              paper: selectedPaperText
             }
           })
         });
@@ -365,12 +367,14 @@
           "_AI Product Variant": selectedSizeText,
           "_AI Custom Options": `Size: ${selectedSizeText}, Frame: ${selectedFrameText}, Paper: ${selectedPaperText}`,
           "_AI Final Options": `Frame: ${selectedFrameText}`,
-          "_AI Final Selections": JSON.stringify({
+           "_AI Final Selections": JSON.stringify({
             size: selectedSizeText,
             frame: "gallery",
             frameColor: selectedFrameColor,
             effect: "none",
-            orientation: selectedOrientation
+            orientation: selectedOrientation,
+            isPod: true,
+            paper: selectedPaperText
           }),
           "_AI Cart Token": `${responseImage.id || "upload"}-${Date.now()}`
         };
