@@ -6,51 +6,6 @@
   {% assign ai_source_product = block.settings.source_product %}
 {% endif %}
 
-{% if block.settings.show_banner %}
-  <div class="aim-top-banner {% if block.settings.banner_width == 'contained' %}aim-top-banner--contained{% endif %}" style="
-    {% if block.settings.banner_image != blank %}
-      background-image: url('{{ block.settings.banner_image | image_url: width: 2000 }}');
-    {% else %}
-      background-color: {{ block.settings.banner_bg_color }};
-    {% endif %}
-    color: {{ block.settings.banner_text_color }};
-    border-radius: {{ block.settings.banner_border_radius }}px;
-  ">
-    <div class="aim-top-banner-overlay" style="background: rgba(0, 0, 0, {{ block.settings.banner_overlay_opacity | divided_by: 100.0 }});"></div>
-    <div class="aim-top-banner-content">
-      <nav class="aim-breadcrumbs" aria-label="breadcrumbs">
-        {% if block.settings.banner_breadcrumbs != blank %}
-          {{ block.settings.banner_breadcrumbs }}
-        {% else %}
-          <a href="/">Home</a>
-          <span class="aim-breadcrumbs-separator">></span>
-          <span>
-            {% if template.name == 'product' %}
-              {{ product.title }}
-            {% elsif template.name == 'page' %}
-              {{ page.title }}
-            {% else %}
-              {{ block.settings.heading | default: "Generate your own image" }}
-            {% endif %}
-          </span>
-        {% endif %}
-      </nav>
-      <h1 class="aim-banner-title">
-        {% if block.settings.banner_title != blank %}
-          {{ block.settings.banner_title }}
-        {% else %}
-          {% if template.name == 'product' %}
-            {{ product.title }}
-          {% elsif template.name == 'page' %}
-            {{ page.title }}
-          {% else %}
-            {{ block.settings.heading | default: "Generate your own image" }}
-          {% endif %}
-        {% endif %}
-      </h1>
-    </div>
-  </div>
-{% endif %}
 
 <div
   class="aim-product-studio"
@@ -67,7 +22,34 @@
   data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
   data-customer-email="{% if customer %}{{ customer.email }}{% endif %}"
   data-preview-label="{{ block.settings.preview_label | escape }}"
+  data-free-generation-limit="3"
 >
+  <div class="aim-studio-topbar">
+    <div class="aim-studio-topbar__main">
+      <span class="aim-studio-step">1</span>
+      <div>
+        <h2 class="aim-studio-title">Create Your Own Artwork</h2>
+        <p class="aim-studio-description">{{ block.settings.description }}</p>
+      </div>
+    </div>
+    <div class="aim-studio-usage">
+      <span data-ai-usage-label aria-live="polite">0 / 3 free generations used</span>
+      {% if block.settings.upgrade_url != blank %}
+        <a class="aim-button aim-button--upgrade" href="{{ block.settings.upgrade_url }}" data-ai-upgrade>
+          {{ block.settings.upgrade_label }}
+        </a>
+      {% else %}
+        <button class="aim-button aim-button--upgrade" type="button" data-ai-upgrade>
+          {{ block.settings.upgrade_label }}
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="aim-mobile-tabs" aria-label="Generator steps">
+    <button class="aim-mobile-tab aim-mobile-tab--create" type="button" data-ai-mobile-tab="create">Create</button>
+    <button class="aim-mobile-tab aim-mobile-tab--preview" type="button" data-ai-mobile-tab="preview">Preview</button>
+  </div>
 
   <!-- Left Sidebar Panels -->
   <div class="aim-product-studio__panel">
@@ -75,16 +57,36 @@
     <!-- Step 1: Prompt Setup Form -->
     <div class="aim-prompt-content">
       <div class="aim-prompt-panel-head">
-        <p>Custom art studio</p>
-        <h2>Create Your Own Artwork</h2>
-        <span>Select options, describe your idea, and choose a visual style before generating.</span>
+        <p>Describe your vision</p>
+        <h2>Generate your own image</h2>
+        <span>Describe the image you want to create, then choose orientation and style before generating.</span>
       </div>
+
+      <!-- Prompt textarea field -->
+      <label class="aim-field">
+        <span class="aim-setup-label">Describe your vision</span>
+        <textarea
+          class="aim-textarea"
+          rows="4"
+          maxlength="1000"
+          data-ai-prompt
+          placeholder="{{ block.settings.placeholder }}"
+        ></textarea>
+        <span class="aim-prompt-count" data-ai-prompt-count>0 / 1000</span>
+      </label>
+
+      <!-- Prompt templates / inspirations -->
+      <div class="aim-prompt-tools" data-ai-prompt-tools></div>
 
       <!-- Orientation field -->
       <div class="aim-setup-field">
-        <span class="aim-setup-label">1. Choose Orientation</span>
+        <span class="aim-setup-label">Image orientation</span>
         <div class="aim-orientation-options">
-          <button type="button" class="aim-orientation-btn is-active" data-ai-orientation-select="portrait">
+          <button type="button" class="aim-orientation-btn is-active" data-ai-orientation-select="landscape">
+            <svg class="aim-orientation-svg landscape" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect></svg>
+            Landscape
+          </button>
+          <button type="button" class="aim-orientation-btn" data-ai-orientation-select="portrait">
             <svg class="aim-orientation-svg portrait" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"></rect></svg>
             Portrait
           </button>
@@ -92,38 +94,23 @@
             <svg class="aim-orientation-svg square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
             Square
           </button>
-          <button type="button" class="aim-orientation-btn" data-ai-orientation-select="landscape">
-            <svg class="aim-orientation-svg landscape" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect></svg>
-            Landscape
-          </button>
         </div>
       </div>
 
-      <!-- Prompt textarea field -->
-      <label class="aim-field">
-        <span class="aim-setup-label">2. Describe your vision</span>
-        <textarea
-          class="aim-textarea"
-          rows="4"
-          data-ai-prompt
-          placeholder="{{ block.settings.placeholder }}"
-        ></textarea>
-      </label>
-
-      <!-- Prompt templates / inspirations -->
-      <div class="aim-prompt-tools" data-ai-prompt-tools></div>
-
       <!-- Effect / Style field -->
       <div class="aim-setup-field">
-        <span class="aim-setup-label">3. Select Style / Effect</span>
-        <div class="aim-effect-options">
-          <button type="button" class="aim-effect-btn is-active" data-ai-effect-select="none">Clean</button>
-          <button type="button" class="aim-effect-btn" data-ai-effect-select="abstract">Abstract</button>
-          <button type="button" class="aim-effect-btn" data-ai-effect-select="minimalist">Minimalist</button>
-          <button type="button" class="aim-effect-btn" data-ai-effect-select="retro">Retro</button>
-          <button type="button" class="aim-effect-btn" data-ai-effect-select="nature">Nature</button>
-          <button type="button" class="aim-effect-btn" data-ai-effect-select="oil-painting">Oil Painting</button>
-        </div>
+        <span class="aim-setup-label">Effects</span>
+        <label class="aim-effect-select-field">
+          <span aria-hidden="true">✦</span>
+          <select data-ai-effect-select>
+            <option value="none">None</option>
+            <option value="abstract">Abstract</option>
+            <option value="minimalist">Minimalist</option>
+            <option value="retro">Retro</option>
+            <option value="nature">Nature</option>
+            <option value="oil-painting">Oil Painting</option>
+          </select>
+        </label>
       </div>
 
       <label class="aim-checkbox" hidden>
@@ -132,10 +119,21 @@
       </label>
 
       <div class="aim-actions">
+        <button class="aim-button aim-button--outline" type="button" data-ai-edit-back hidden>
+          Back to preview
+        </button>
         <button class="aim-button aim-button--primary" type="button" data-ai-generate>
           {{ block.settings.button_label }}
         </button>
       </div>
+
+      <p class="aim-generation-note">
+        {% if customer %}
+          Your account is connected. Generate and save artwork to your collection.
+        {% else %}
+          Sign up required after 3 images.
+        {% endif %}
+      </p>
 
       <p class="aim-status" data-ai-status></p>
     </div>
@@ -150,7 +148,7 @@
 
       <div class="aim-preview-actions-vertical">
         <button class="aim-button aim-button--primary" type="button" data-ai-preview-finalise>
-          Finalize Design
+          Save
         </button>
         <div class="aim-preview-row">
           <button class="aim-button aim-button--outline" type="button" data-ai-preview-edit-toggle>
@@ -247,6 +245,43 @@
           <span>Your creativity starts here</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="aim-studio-auth-strip">
+    <div class="aim-studio-auth-strip__copy">
+      <strong>Sign up required after 3 images</strong>
+      <p>
+        {% if customer %}
+          You can keep generating, save favorites, and continue refining your artwork.
+        {% else %}
+          Create an account to unlock more generations and save your favorite artwork.
+        {% endif %}
+      </p>
+    </div>
+    {% if customer %}
+      <a class="aim-button aim-button--auth" href="{{ routes.account_url }}">View account</a>
+    {% else %}
+      <a class="aim-button aim-button--auth" href="{{ routes.account_login_url }}">Sign Up / Log In</a>
+    {% endif %}
+  </div>
+
+  <div class="aim-studio-benefits" aria-label="Artwork benefits">
+    <div class="aim-studio-benefit">
+      <strong>AI-Powered Creation</strong>
+      <p>Advanced AI models bring your ideas to life.</p>
+    </div>
+    <div class="aim-studio-benefit">
+      <strong>Unique & Personalized</strong>
+      <p>Tailored artwork that matches your style.</p>
+    </div>
+    <div class="aim-studio-benefit">
+      <strong>High Quality Output</strong>
+      <p>Museum-grade quality for your space.</p>
+    </div>
+    <div class="aim-studio-benefit">
+      <strong>Endless Possibilities</strong>
+      <p>From concepts to masterpieces in seconds.</p>
     </div>
   </div>
 </div>

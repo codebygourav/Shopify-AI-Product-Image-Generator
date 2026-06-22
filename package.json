@@ -4,7 +4,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "shopify app dev",
-    "postinstall": "npm install --no-workspaces --prefix extensions/ai-checkout-image && npm install --no-workspaces --prefix extensions/ai-customer-account-image",
+    "postinstall": "npm install --ignore-scripts --no-workspaces --prefix extensions/ai-checkout-image && npm install --ignore-scripts --no-workspaces --prefix extensions/ai-customer-account-image",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",

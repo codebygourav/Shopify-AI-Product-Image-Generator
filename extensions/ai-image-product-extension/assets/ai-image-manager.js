@@ -174,6 +174,72 @@
     );
   }
 
+  function syncSelectionsToNativeForm(form, finalSelections) {
+    if (!form || !finalSelections) return;
+
+    function normalize(str) {
+      return String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    const selections = {
+      size: finalSelections.size,
+      frame: finalSelections.frame,
+      frameColor: finalSelections.frameColor,
+    };
+
+    if (selections.frame === "none" || selections.frame === "canvas") {
+      selections.frameColor = "";
+    }
+
+    form.querySelectorAll("select").forEach((select) => {
+      const name = select.name || "";
+      if (!name.includes("option") && !name.includes("id")) return;
+
+      Array.from(select.options).forEach((opt) => {
+        const text = opt.textContent || "";
+        const val = opt.value || "";
+
+        if (name === "id") {
+          const sizeMatch = !selections.size || normalize(text).includes(normalize(selections.size));
+          let frameMatch = true;
+          if (selections.frame === "floating") {
+            frameMatch = normalize(text).includes("floating") || normalize(text).includes("float");
+          } else if (selections.frame === "canvas") {
+            frameMatch = normalize(text).includes("canvas") || normalize(text).includes("stretched");
+          }
+          let colorMatch = true;
+          if (selections.frameColor) {
+            colorMatch = normalize(text).includes(normalize(selections.frameColor));
+          }
+          if (sizeMatch && frameMatch && colorMatch) {
+            select.value = val;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          return;
+        }
+
+        Object.entries(selections).forEach(([key, chosenVal]) => {
+          if (!chosenVal) return;
+          if (normalize(text) === normalize(chosenVal) || normalize(val) === normalize(chosenVal)) {
+            select.value = val;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        });
+      });
+    });
+
+    form.querySelectorAll("input[type='radio']").forEach((radio) => {
+      const val = radio.value || "";
+      Object.entries(selections).forEach(([key, chosenVal]) => {
+        if (!chosenVal) return;
+        if (normalize(val) === normalize(chosenVal)) {
+          radio.checked = true;
+          radio.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
+    });
+  }
+
   function selectedVariant(form) {
     const idInput = form?.querySelector("[name='id']");
     const variantId = idInput?.value || "";
@@ -260,22 +326,22 @@
       if (!line) return;
 
       let image = line.querySelector("img");
-      if (!image) {
-        image = createCartLineImage(line, imageUrl, prompt);
-      } else {
-        // Strip theme lazy-loading attributes to prevent theme scripts from overwriting our AI image URL
-        image.removeAttribute("srcset");
-        image.removeAttribute("data-srcset");
-        image.removeAttribute("data-src");
-        image.removeAttribute("data-lazy");
-        image.removeAttribute("data-lazy-src");
-        image.sizes = "";
-      }
+      if (image) {
+        const newImage = document.createElement("img");
+        newImage.className = "aim-cart-line-image";
+        newImage.src = toProxyImageUrl(imageUrl);
+        newImage.alt = prompt;
 
-      image.src = toProxyImageUrl(imageUrl);
-      image.srcset = "";
-      image.alt = prompt;
-      image.classList.add("aim-cart-line-image");
+        const picture = image.closest("picture");
+        if (picture) {
+          picture.replaceWith(newImage);
+        } else {
+          image.replaceWith(newImage);
+        }
+        image = newImage;
+      } else {
+        image = createCartLineImage(line, imageUrl, prompt);
+      }
       injectCartRedesignAction(line, item);
 
       // Apply preview wrapping for customized configurations (frames, matting, aspect-ratio, effects)
@@ -733,29 +799,50 @@
 
       const generateButton = root.querySelector("[data-ai-generate]");
       const textarea = root.querySelector("[data-ai-prompt]");
+      const promptCount = root.querySelector("[data-ai-prompt-count]");
       const status = root.querySelector("[data-ai-status]");
       const preview = root.querySelector("[data-ai-preview]");
+      const usageLabel = root.querySelector("[data-ai-usage-label]");
+      const upgradeButton = root.querySelector("[data-ai-upgrade]");
+      const editBackButton = root.querySelector("[data-ai-edit-back]");
       const form = productForm(root);
 
       // Wizard UI elements
-      const orientationSelectBtns = root.querySelectorAll("[data-ai-orientation-select]");
-      const effectSelectBtns = root.querySelectorAll("[data-ai-effect-select]");
-      const previewFinaliseBtn = root.querySelector("[data-ai-preview-finalise]");
-      const previewEditToggleBtn = root.querySelector("[data-ai-preview-edit-toggle]");
-      const previewRegenerateBtn = root.querySelector("[data-ai-preview-regenerate]");
+      const orientationSelectBtns = root.querySelectorAll(
+        "[data-ai-orientation-select]",
+      );
+      const effectSelectBtns = root.querySelectorAll(
+        "button[data-ai-effect-select]",
+      );
+      const effectSelectControl = root.querySelector(
+        "select[data-ai-effect-select]",
+      );
+      const previewFinaliseBtn = root.querySelector(
+        "[data-ai-preview-finalise]",
+      );
+      const previewEditToggleBtn = root.querySelector(
+        "[data-ai-preview-edit-toggle]",
+      );
+      const previewRegenerateBtn = root.querySelector(
+        "[data-ai-preview-regenerate]",
+      );
       const editPromptBox = root.querySelector("[data-ai-edit-prompt-box]");
       const tweakPromptTextarea = root.querySelector("[data-ai-tweak-prompt]");
       const tweakGenerateBtn = root.querySelector("[data-ai-tweak-generate]");
       const frameTypeSelect = root.querySelector("[data-ai-frame-type-select]");
       const frameColorGroup = root.querySelector("[data-ai-frame-color-group]");
-      const frameColorSelect = root.querySelector("[data-ai-frame-color-select]");
+      const frameColorSelect = root.querySelector(
+        "[data-ai-frame-color-select]",
+      );
       const editorBackBtn = root.querySelector("[data-ai-editor-back]");
       const checkoutBtn = root.querySelector("[data-ai-checkout-button]");
+      const mobileTabs = root.querySelectorAll("[data-ai-mobile-tab]");
 
       let selectedImage = null;
       let draftVariants = [];
       let finalSelections = defaultFinalSelections();
       let generationRequest = null;
+      let generationUsage = null;
 
       root._setSelectedImage = (img) => {
         selectedImage = img;
@@ -773,31 +860,65 @@
       setStudioStep(root, "prompt");
 
       const studioConfig = await fetchStudioConfig(root);
+      generationUsage = normalizeGenerationUsage(
+        root,
+        studioConfig.generationUsage,
+      );
+      renderGenerationUsage(root, generationUsage, {
+        usageLabel,
+        generateButton,
+        upgradeButton,
+      });
       prefillPromptFromUrl(textarea);
+      syncPromptCounter(textarea, promptCount);
       prefillOptionsFromUrl(root);
 
+      textarea?.addEventListener("input", () => {
+        syncPromptCounter(textarea, promptCount);
+      });
+
       // Orientation Selector listener
-      orientationSelectBtns.forEach(btn => {
+      orientationSelectBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
           const val = btn.dataset.aiOrientationSelect;
           finalSelections.orientation = val;
           finalSelections.size = defaultSizeForOrientation(val);
-          orientationSelectBtns.forEach(b => b.classList.toggle("is-active", b === btn));
+          orientationSelectBtns.forEach((b) =>
+            b.classList.toggle("is-active", b === btn),
+          );
         });
       });
 
       // Effect Selector listener
-      effectSelectBtns.forEach(btn => {
+      effectSelectBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
           const val = btn.dataset.aiEffectSelect;
           finalSelections.effect = val;
-          effectSelectBtns.forEach(b => b.classList.toggle("is-active", b === btn));
+          effectSelectBtns.forEach((b) =>
+            b.classList.toggle("is-active", b === btn),
+          );
         });
+      });
+
+      effectSelectControl?.addEventListener("change", (event) => {
+        finalSelections.effect = event.target.value || "none";
+        applyPreviewPresentation(preview, finalSelections);
       });
 
       // Generator logic helper
       async function triggerGeneration(promptText, btnElement) {
         if (generationRequest) return;
+
+        if (isGenerationLimitReached(generationUsage)) {
+          renderGenerationUsage(root, generationUsage, {
+            usageLabel,
+            generateButton,
+            upgradeButton,
+          });
+          status.textContent =
+            "You have used all free generations. Upgrade to create more artwork.";
+          return;
+        }
 
         const finalPrompt = promptText.trim();
         if (!finalPrompt) {
@@ -814,7 +935,7 @@
           promptWithOptions += ` Style: ${labelize(finalSelections.effect)} style.`;
         }
         if (finalSelections.orientation) {
-          promptWithOptions += ` Layout: ${labelize(finalSelections.orientation)} orientation, ${finalSelections.orientation === 'portrait' ? '2:3' : finalSelections.orientation === 'landscape' ? '3:2' : '1:1'} aspect ratio.`;
+          promptWithOptions += ` Layout: ${labelize(finalSelections.orientation)} orientation, ${finalSelections.orientation === "portrait" ? "2:3" : finalSelections.orientation === "landscape" ? "3:2" : "1:1"} aspect ratio.`;
         }
         promptWithOptions += ` Generate fast low-resolution draft concepts only. Do not apply size, frame, crop, or visual effect choices yet.`;
 
@@ -863,16 +984,17 @@
           );
           const response = await generationRequest;
           const data = await readJson(response);
-          if (!data.success) throw new Error(data.error || "Image generation failed.");
-          if (!data.image) throw new Error("The AI app did not return a preview image.");
+          if (!data.success)
+            throw new Error(data.error || "Image generation failed.");
+          if (!data.image)
+            throw new Error("The AI app did not return a preview image.");
 
-          const nextVariants = (data.variants || [data.generation]).filter(Boolean);
+          const nextVariants = (data.variants || [data.generation]).filter(
+            Boolean,
+          );
           root._setDraftVariants(nextVariants);
           root._setSelectedImage(
-            mergeImageFinalSelections(
-              draftVariants[0],
-              finalSelections,
-            )
+            mergeImageFinalSelections(draftVariants[0], finalSelections),
           );
 
           if (tweakPromptTextarea) tweakPromptTextarea.value = finalPrompt;
@@ -885,7 +1007,10 @@
           applyPreviewPresentation(preview, finalSelections);
 
           setStudioStep(root, "preview");
-          status.textContent = "Artwork generated successfully. Choose to edit, reset, or finalize your frame options.";
+          setPromptEditMode(root, false);
+          status.textContent =
+            "Artwork generated successfully. Choose to edit, reset, or finalize your frame options.";
+          generationUsage = incrementGenerationUsage(root, generationUsage);
         } catch (error) {
           status.textContent = error.message;
           setStudioStep(root, "prompt");
@@ -896,6 +1021,11 @@
           btnElement.classList.remove("is-loading");
           btnElement.textContent = originalText;
           generationRequest = null;
+          renderGenerationUsage(root, generationUsage, {
+            usageLabel,
+            generateButton,
+            upgradeButton,
+          });
         }
       }
 
@@ -904,22 +1034,88 @@
         triggerGeneration(textarea.value, generateButton);
       });
 
-      // Step 2 Action Listeners
-      previewFinaliseBtn?.addEventListener("click", () => {
-        setStudioStep(root, "editor");
+      upgradeButton?.addEventListener("click", (event) => {
+        if (!isGenerationLimitReached(generationUsage)) {
+          event.preventDefault();
+          status.textContent = "You still have free generations available.";
+          return;
+        }
 
-        // Render Size Selector dropdown dynamically matching orientation
-        renderSizeSelector(root, preview, finalSelections);
-        applyPreviewPresentation(preview, finalSelections);
-      });
-
-      previewEditToggleBtn?.addEventListener("click", () => {
-        if (editPromptBox) {
-          editPromptBox.hidden = !editPromptBox.hidden;
+        if (
+          upgradeButton.tagName !== "A" ||
+          !upgradeButton.getAttribute("href")
+        ) {
+          event.preventDefault();
+          status.textContent = "Upgrade option is not configured yet.";
         }
       });
 
+      mobileTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const target = tab.dataset.aiMobileTab;
+          if (target === "create") {
+            setStudioStep(root, "prompt");
+            return;
+          }
+          if (target === "preview" && selectedImage) {
+            setStudioStep(root, "preview");
+          }
+        });
+      });
+
+      // Step 2 Action Listeners
+      previewFinaliseBtn?.addEventListener("click", () => {
+        setStudioStep(root, "editor");
+        setPromptEditMode(root, false);
+
+        // Render Size Selector dropdown dynamically matching orientation
+        renderSizeSelector(root, preview, finalSelections);
+        syncEditorControls(root, finalSelections);
+        applyPreviewPresentation(preview, finalSelections);
+        syncSelectionsToNativeForm(form, finalSelections);
+      });
+
+      previewEditToggleBtn?.addEventListener("click", () => {
+        if (!selectedImage) return;
+
+        // Prefill values back to Step 1
+        if (textarea) {
+          textarea.value = displayPrompt(selectedImage);
+          syncPromptCounter(textarea, promptCount);
+        }
+
+        const currentOrientation = selectedImage.orientation || finalSelections.orientation || "portrait";
+        orientationSelectBtns.forEach((btn) => {
+          btn.classList.toggle(
+            "is-active",
+            btn.dataset.aiOrientationSelect === currentOrientation,
+          );
+        });
+        finalSelections.orientation = currentOrientation;
+
+        const currentEffect = selectedImage.effect || finalSelections.effect || "none";
+        if (effectSelectControl) {
+          effectSelectControl.value = currentEffect;
+        }
+        finalSelections.effect = currentEffect;
+
+        setPromptEditMode(root, true);
+        setStudioStep(root, "prompt");
+      });
+
+      editBackButton?.addEventListener("click", () => {
+        if (!selectedImage) {
+          setPromptEditMode(root, false);
+          return;
+        }
+        setPromptEditMode(root, false);
+        setStudioStep(root, "preview");
+        status.textContent =
+          "Returned to your generated artwork. You can continue from here.";
+      });
+
       previewRegenerateBtn?.addEventListener("click", () => {
+        setPromptEditMode(root, false);
         resetGeneratorState(root);
       });
 
@@ -937,7 +1133,9 @@
         } else {
           if (frameColorGroup) frameColorGroup.hidden = false;
           finalSelections.frame = "gallery";
-          finalSelections.frameColor = frameColorSelect ? frameColorSelect.value : "black";
+          finalSelections.frameColor = frameColorSelect
+            ? frameColorSelect.value
+            : "black";
         }
         applyPreviewPresentation(preview, finalSelections);
         storePreview(root, {
@@ -945,6 +1143,7 @@
           image: selectedImage.imageUrl,
           prompt: displayPrompt(selectedImage),
         });
+        syncSelectionsToNativeForm(form, finalSelections);
       });
 
       // Step 3 Frame Color Select
@@ -956,6 +1155,7 @@
           image: selectedImage.imageUrl,
           prompt: displayPrompt(selectedImage),
         });
+        syncSelectionsToNativeForm(form, finalSelections);
       });
 
       // Step 3 Back Button
@@ -974,7 +1174,10 @@
         status.textContent = "Saving artwork and opening cart...";
 
         try {
-          const finalImageSelection = mergeImageFinalSelections(selectedImage, finalSelections);
+          const finalImageSelection = mergeImageFinalSelections(
+            selectedImage,
+            finalSelections,
+          );
           let responseImage = selectedImage;
 
           // Save the customer image record
@@ -1040,9 +1243,14 @@
 
         toggleGeneratorImageSections(root, true);
         setStudioStep(root, "preview");
-        if (tweakPromptTextarea) tweakPromptTextarea.value = displayPrompt(selectedImage);
+        if (tweakPromptTextarea)
+          tweakPromptTextarea.value = displayPrompt(selectedImage);
 
-        await renderGeneratedPreview(preview, selectedImage.imageUrl, displayPrompt(selectedImage));
+        await renderGeneratedPreview(
+          preview,
+          selectedImage.imageUrl,
+          displayPrompt(selectedImage),
+        );
         applyPreviewPresentation(preview, finalSelections);
       }
     });
@@ -1053,7 +1261,7 @@
     if (!sizePlaceholder) return;
 
     const sizes = sizeGroups()[finalSelections.orientation || "portrait"] || [];
-    if (!sizes.some(s => s.value === finalSelections.size)) {
+    if (!sizes.some((s) => s.value === finalSelections.size)) {
       finalSelections.size = sizes[0]?.value || "";
     }
 
@@ -1061,11 +1269,15 @@
       <label class="aim-select-field">
         <span>Dimensions</span>
         <select data-ai-size-select>
-          ${sizes.map(size => `
+          ${sizes
+        .map(
+          (size) => `
             <option value="${size.value}" ${size.value === finalSelections.size ? "selected" : ""}>
               ${size.label}
             </option>
-          `).join("")}
+          `,
+        )
+        .join("")}
         </select>
       </label>
     `;
@@ -1073,15 +1285,159 @@
     const sizeSelect = sizePlaceholder.querySelector("[data-ai-size-select]");
     sizeSelect?.addEventListener("change", (e) => {
       finalSelections.size = e.target.value;
+      finalSelections.orientation = orientationForSize(finalSelections.size);
       applyPreviewPresentation(preview, finalSelections);
+
+      const selectedImage = root._selectedImage;
+      const nextImage = mergeImageFinalSelections(selectedImage, finalSelections);
+      root._setSelectedImage(nextImage);
+      root._setFinalSelections(finalSelections);
+
+      storePreview(root, {
+        generation: nextImage,
+        image: nextImage.imageUrl,
+        prompt: displayPrompt(nextImage),
+      });
+
+      const form = productForm(root);
+      syncSelectionsToNativeForm(form, finalSelections);
     });
+  }
+
+  function syncEditorControls(root, finalSelections) {
+    const frameTypeSelect = root.querySelector("[data-ai-frame-type-select]");
+    const frameColorGroup = root.querySelector("[data-ai-frame-color-group]");
+    const frameColorSelect = root.querySelector("[data-ai-frame-color-select]");
+
+    if (frameTypeSelect) {
+      frameTypeSelect.value =
+        finalSelections.frame && finalSelections.frame !== "none"
+          ? "floating"
+          : "canvas";
+    }
+    if (frameColorSelect && finalSelections.frameColor) {
+      frameColorSelect.value = finalSelections.frameColor;
+    }
+    if (frameColorGroup) {
+      frameColorGroup.hidden =
+        !finalSelections.frame || finalSelections.frame === "none";
+    }
+  }
+
+  function syncPromptCounter(textarea, counter) {
+    if (!textarea || !counter) return;
+    const limit = Number(textarea.getAttribute("maxlength")) || 1000;
+    counter.textContent = `${textarea.value.length} / ${limit}`;
+  }
+
+  function setPromptEditMode(root, active) {
+    if (!root) return;
+    root.classList.toggle("is-editing-prompt", Boolean(active));
+    const backButton = root.querySelector("[data-ai-edit-back]");
+    if (backButton) backButton.hidden = !active;
+  }
+
+  function normalizeGenerationUsage(root, usage) {
+    const fallbackLimit = Number(root?.dataset?.freeGenerationLimit) || 3;
+    const limitValue = Number(usage?.limit);
+    const usedValue = Number(usage?.used);
+    const limit = Number.isFinite(limitValue) && limitValue >= 0
+      ? Math.floor(limitValue)
+      : fallbackLimit;
+    const enforce = usage?.enforce !== false;
+    let used = Number.isFinite(usedValue) && usedValue >= 0
+      ? Math.floor(usedValue)
+      : 0;
+
+    if (!root?.dataset?.customerId) {
+      used = Math.max(used, readLocalGenerationUsage(root));
+    }
+
+    return { used, limit, enforce };
+  }
+
+  function generationUsageStorageKey(root) {
+    const shop = root?.dataset?.shop || window.location.hostname || "shop";
+    const visitor = root?.dataset?.customerId || "guest";
+    return `aim-free-generations:${shop}:${visitor}`;
+  }
+
+  function readLocalGenerationUsage(root) {
+    try {
+      return Number(localStorage.getItem(generationUsageStorageKey(root))) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function writeLocalGenerationUsage(root, used) {
+    try {
+      localStorage.setItem(generationUsageStorageKey(root), String(used));
+    } catch {
+      // Local storage can be unavailable in some privacy modes.
+    }
+  }
+
+  function isGenerationLimitReached(usage) {
+    return Boolean(
+      usage &&
+      Number.isFinite(usage.limit) &&
+      usage.limit >= 0 &&
+      usage.enforce !== false &&
+      usage.used >= usage.limit,
+    );
+  }
+
+  function incrementGenerationUsage(root, usage) {
+    const next = normalizeGenerationUsage(root, usage);
+    next.used += 1;
+    if (!root?.dataset?.customerId) {
+      writeLocalGenerationUsage(root, next.used);
+    }
+    return next;
+  }
+
+  function renderGenerationUsage(
+    root,
+    usage,
+    { usageLabel, generateButton, upgradeButton } = {},
+  ) {
+    const currentUsage = normalizeGenerationUsage(root, usage);
+    const reached = isGenerationLimitReached(currentUsage);
+    const used = Math.min(currentUsage.used, currentUsage.limit);
+
+    if (usageLabel) {
+      usageLabel.textContent = `${used} / ${currentUsage.limit} free generations used`;
+    }
+
+    if (generateButton && !generateButton.classList.contains("is-loading")) {
+      generateButton.disabled = reached;
+      generateButton.setAttribute(
+        "aria-disabled",
+        reached ? "true" : "false",
+      );
+    }
+
+    if (upgradeButton) {
+      if (upgradeButton.tagName === "BUTTON") {
+        upgradeButton.disabled = !reached;
+      }
+      upgradeButton.setAttribute("aria-disabled", reached ? "false" : "true");
+      upgradeButton.classList.toggle("is-disabled", !reached);
+    }
+
+    root?.classList.toggle("is-generation-limit-reached", reached);
   }
 
   enhanceCartLineImages();
   enhanceStaticImages();
+  setTimeout(enhanceCartLineImages, 500);
+  setTimeout(enhanceCartLineImages, 1500);
+  setTimeout(enhanceCartLineImages, 3000);
   setTimeout(enhanceStaticImages, 500);
   setTimeout(enhanceStaticImages, 1500);
   window.addEventListener("pageshow", (event) => {
+    enhanceCartLineImages();
     resetTransientLoadingState();
     document
       .querySelectorAll("[data-ai-gallery].is-detail-active")
@@ -1132,12 +1488,25 @@
       grid?.classList.remove("aim-grid-loading");
       grid?.removeAttribute("aria-busy");
     }
-    grid?.classList.toggle("aim-moodboard-grid", !isImageOnlyGallery);
-    grid?.classList.toggle("aim-inspiration-masonry", isImageOnlyGallery);
-    grid?.classList.toggle(
-      "aim-pinterest-grid",
-      isPinterest || isGeneratorCommunity,
-    );
+    if (grid) {
+      const layoutStyle = root.dataset.layoutStyle || "";
+      grid.classList.remove(
+        "aim-moodboard-grid",
+        "aim-inspiration-masonry",
+        "aim-pinterest-grid",
+        "aim-gallery-slider",
+      );
+
+      if (!isImageOnlyGallery) {
+        grid.classList.add("aim-moodboard-grid");
+      } else if (layoutStyle === "slider") {
+        grid.classList.add("aim-gallery-slider");
+      } else if (layoutStyle === "grid") {
+        grid.classList.add("aim-pinterest-grid", "aim-mobile-grid-preferred");
+      } else {
+        grid.classList.add("aim-inspiration-masonry", "aim-pinterest-grid");
+      }
+    }
     const galleryMode = isGeneratorCommunity
       ? "inspiration"
       : isPinterest
@@ -1350,6 +1719,12 @@
 
     try {
       const params = new URLSearchParams({ shop: root?.dataset?.shop || "" });
+      if (root?.dataset?.customerId) {
+        params.set("customerId", root.dataset.customerId);
+      }
+      if (root?.dataset?.customerEmail) {
+        params.set("customerEmail", root.dataset.customerEmail);
+      }
       const response = await fetch(
         apiUrl(
           root?.dataset?.apiBase,
@@ -1357,7 +1732,11 @@
         ),
       );
       const data = await readJson(response);
-      const config = data.studioProduct || fallback;
+      const config = {
+        ...fallback,
+        ...(data.studioProduct || {}),
+        generationUsage: data.generationUsage,
+      };
       if (root) root._studioConfig = config;
       return config;
     } catch {
@@ -1788,25 +2167,111 @@
       return '<p class="aim-empty">No approved reviews yet.</p>';
     }
 
-    return reviews
-      .map((review) => {
-        const prompt = displayPrompt(review.image || {});
-        const body = String(review.body || "");
-        const isReply = body.startsWith("Reply to ");
-        return `
-          <article class="aim-review ${isReply ? "is-reply" : ""}">
-            <img src="${escapeHtml(toProxyImageUrl(review.image?.imageUrl || ""))}" alt="${escapeHtml(prompt || "Generated image")}" loading="lazy">
-            <div>
-              <div class="aim-stars">${"★".repeat(Number(review.rating) || 5)}</div>
-              <strong>${escapeHtml(review.customer?.displayName || "Customer")}</strong>
-              <p>${escapeHtml(body)}</p>
-              <small>${escapeHtml(shortTitle(prompt))}</small>
-              <button type="button" class="aim-review-reply" data-ai-review-reply="${escapeHtml(review.customer?.displayName || "Customer")}">Reply</button>
-            </div>
-          </article>
-        `;
-      })
+    return buildReviewThreads(reviews)
+      .map(renderReviewThread)
       .join("");
+  }
+
+  function buildReviewThreads(reviews) {
+    const parents = [];
+    const replies = [];
+
+    reviews.forEach((review) => {
+      const parsedReply = parseReviewReply(review.body);
+      if (parsedReply) {
+        replies.push({ review, parsedReply });
+        return;
+      }
+      parents.push({ review, replies: [] });
+    });
+
+    const byAuthor = new Map();
+    parents.forEach((thread) => {
+      const key = normalizeReviewAuthor(reviewAuthor(thread.review));
+      if (!byAuthor.has(key)) byAuthor.set(key, []);
+      byAuthor.get(key).push(thread);
+    });
+
+    replies.forEach((reply) => {
+      const target = normalizeReviewAuthor(reply.parsedReply.target);
+      const parent = byAuthor.get(target)?.[0];
+      if (parent) {
+        parent.replies.push(reply);
+        return;
+      }
+      parents.push({ review: reply.review, replies: [], parsedReply: reply.parsedReply });
+    });
+
+    parents.forEach((thread) => {
+      thread.replies.sort((a, b) => {
+        return (
+          Date.parse(a.review.createdAt || "") -
+          Date.parse(b.review.createdAt || "")
+        );
+      });
+    });
+
+    return parents;
+  }
+
+  function renderReviewThread(thread) {
+    const parent = renderReviewCard(thread.review, {
+      isReply: Boolean(thread.parsedReply),
+      parsedReply: thread.parsedReply,
+    });
+    const replies = thread.replies?.length
+      ? `<div class="aim-review-replies">${thread.replies
+        .map((reply) =>
+          renderReviewCard(reply.review, {
+            isReply: true,
+            parsedReply: reply.parsedReply,
+          }),
+        )
+        .join("")}</div>`
+      : "";
+    return `<div class="aim-review-thread">${parent}${replies}</div>`;
+  }
+
+  function renderReviewCard(review, { isReply = false, parsedReply = null } = {}) {
+    const prompt = displayPrompt(review.image || {});
+    const author = reviewAuthor(review);
+    const body = parsedReply?.text ?? String(review.body || "");
+    return `
+      <article class="aim-review ${isReply ? "is-reply" : ""}">
+        <span class="aim-review__avatar" aria-hidden="true">${escapeHtml(creatorInitial(author))}</span>
+        <div class="aim-review__content">
+        <div class="aim-review__meta">
+
+          <strong>${escapeHtml(author)}</strong>
+                  <div class="aim-stars">
+        ${"★".repeat(Number(review.rating) || 5)}</div>
+        </div>
+          ${parsedReply ? `<small class="aim-review__reply-label">Reply to ${escapeHtml(parsedReply.target)}</small>` : ""}
+          <p>${escapeHtml(body)}</p>
+          <small>${escapeHtml(shortTitle(prompt))}</small>
+          <button type="button" class="aim-review-reply" data-ai-review-reply="${escapeHtml(author)}">Reply</button>
+        </div>
+      </article>
+    `;
+  }
+
+  function parseReviewReply(body) {
+    const match = String(body || "").match(/^Reply to\s+([^:]+):\s*([\s\S]*)$/i);
+    if (!match) return null;
+    return {
+      target: match[1].trim(),
+      text: match[2].trim(),
+    };
+  }
+
+  function reviewAuthor(review) {
+    return review.customer?.displayName || "Customer";
+  }
+
+  function normalizeReviewAuthor(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase();
   }
 
   function renderReviewImageOptions(images) {
@@ -2424,18 +2889,30 @@
     const status = root.querySelector("[data-ai-status]");
     const generateButton = root.querySelector("[data-ai-generate]");
     const promptInput = root.querySelector("[data-ai-prompt]");
+    const promptCount = root.querySelector("[data-ai-prompt-count]");
     const tweakInput = root.querySelector("[data-ai-tweak-prompt]");
     const editPromptBox = root.querySelector("[data-ai-edit-prompt-box]");
 
     if (promptInput) promptInput.value = "";
+    syncPromptCounter(promptInput, promptCount);
     if (tweakInput) tweakInput.value = "";
     if (editPromptBox) editPromptBox.hidden = true;
 
-    root.querySelectorAll("[data-ai-orientation-select]").forEach(btn => {
-      btn.classList.toggle("is-active", btn.dataset.aiOrientationSelect === "portrait");
+    root.querySelectorAll("[data-ai-orientation-select]").forEach((btn) => {
+      btn.classList.toggle(
+        "is-active",
+        btn.dataset.aiOrientationSelect === "landscape",
+      );
     });
-    root.querySelectorAll("[data-ai-effect-select]").forEach(btn => {
-      btn.classList.toggle("is-active", btn.dataset.aiEffectSelect === "none");
+    root.querySelectorAll("[data-ai-effect-select]").forEach((btn) => {
+      if (btn.tagName === "SELECT") {
+        btn.value = "none";
+      } else {
+        btn.classList.toggle(
+          "is-active",
+          btn.dataset.aiEffectSelect === "none",
+        );
+      }
     });
 
     if (preview) {
@@ -2586,14 +3063,19 @@
   function renderReviewPage(detail, reviews, page) {
     const perPage = 5;
     const safeReviews = Array.isArray(reviews) ? reviews : [];
-    const maxPage = Math.max(0, Math.ceil(safeReviews.length / perPage) - 1);
+    const reviewThreads = buildReviewThreads(safeReviews);
+    const maxPage = Math.max(0, Math.ceil(reviewThreads.length / perPage) - 1);
     const nextPage = Math.max(0, Math.min(maxPage, page));
     const list = detail.querySelector("[data-ai-detail-review-list]");
     const pagination = detail.querySelector("[data-ai-review-pagination]");
     if (list) {
-      list.innerHTML = renderReviews(
-        safeReviews.slice(nextPage * perPage, nextPage * perPage + perPage),
+      const pageThreads = reviewThreads.slice(
+        nextPage * perPage,
+        nextPage * perPage + perPage,
       );
+      list.innerHTML = pageThreads.length
+        ? pageThreads.map(renderReviewThread).join("")
+        : renderReviews([]);
     }
     if (!pagination) return;
     pagination.innerHTML =
@@ -2761,8 +3243,8 @@
 
   function defaultFinalSelections() {
     return {
-      orientation: "portrait",
-      size: "16x24",
+      orientation: "landscape",
+      size: "24x16",
       frame: "none",
       frameColor: "black",
       effect: "none",
@@ -3154,6 +3636,13 @@
     preview.dataset.aiFrame = current.frame;
     preview.dataset.aiFrameColor = current.frameColor;
     preview.dataset.aiEffect = current.effect;
+
+    // Dynamically update the size label in the badge span
+    const badge = preview.querySelector("span");
+    if (badge) {
+      const sizeText = current.size ? sizeLabel(current.size) : "";
+      badge.textContent = sizeText ? `orvellastudio.com — ${sizeText}` : "orvellastudio.com";
+    }
   }
 
   function orientationForSize(size) {
@@ -3166,25 +3655,53 @@
   }
 
   function sizeLabel(size) {
-    return String(size || "")
-      .replace("x", " x ")
-      .replace(/\b(\d+)\b/g, "$1 in");
+    if (!size) return "";
+    const groups = sizeGroups();
+    const allSizes = [
+      ...groups.landscape,
+      ...groups.portrait,
+      ...groups.square,
+    ];
+    const match = allSizes.find((s) => s.value === size);
+    if (match) return match.label;
+    return String(size).replace("x", "” × ") + "”";
   }
 
   function setStudioStep(root, step) {
     root.dataset.aiStudioStep = step;
-    root.classList.toggle("is-prompt-screen", step === "prompt" || step === "generating");
+    root.classList.toggle(
+      "is-prompt-screen",
+      step === "prompt" || step === "generating",
+    );
     root.classList.toggle("is-preview-screen", step === "preview");
     root.classList.toggle("is-editor-screen", step === "editor");
     root.classList.toggle("is-generating", step === "generating");
 
     const promptContainer = root.querySelector(".aim-prompt-content");
-    const previewContainer = root.querySelector("[data-ai-preview-controls-container]");
-    const editorContainer = root.querySelector("[data-ai-editor-controls-container]");
+    const previewContainer = root.querySelector(
+      "[data-ai-preview-controls-container]",
+    );
+    const editorContainer = root.querySelector(
+      "[data-ai-editor-controls-container]",
+    );
 
-    if (promptContainer) promptContainer.hidden = (step !== "prompt" && step !== "generating");
-    if (previewContainer) previewContainer.hidden = (step !== "preview");
-    if (editorContainer) editorContainer.hidden = (step !== "editor");
+    if (promptContainer)
+      promptContainer.hidden = step !== "prompt" && step !== "generating";
+    if (previewContainer) previewContainer.hidden = step !== "preview";
+    if (editorContainer) editorContainer.hidden = step !== "editor";
+
+    root.querySelectorAll("[data-ai-mobile-tab]").forEach((tab) => {
+      const target = tab.dataset.aiMobileTab;
+      const isActive =
+        (target === "create" && (step === "prompt" || step === "generating")) ||
+        (target === "preview" && (step === "preview" || step === "editor"));
+      tab.classList.toggle("is-active", isActive);
+      tab.setAttribute("aria-pressed", isActive ? "true" : "false");
+      if (target === "preview") {
+        tab.disabled =
+          !root._selectedImage && step !== "preview" && step !== "editor";
+      }
+    });
   }
 
   function syncPromptShowcase(root) {

@@ -284,11 +284,10 @@ export async function clonePoolImageToUniqueFile(poolImageUrl) {
   // Examples: "image.png", "/path/to/image.png", "https://...../image.png?params"
   const urlString = String(poolImageUrl);
   const filename = urlString
-    .split('?')[0]  // Remove query string
-    .split('#')[0]  // Remove fragment
-    .split('/')     // Split by path separator
-    .filter(Boolean) // Remove empty strings
-    .pop();          // Get last part (filename)
+    .split(/[?#&]/)[0]  // Remove query string, fragment, or parameter separators
+    .split('/')         // Split by path separator
+    .filter(Boolean)    // Remove empty strings
+    .pop();             // Get last part (filename)
 
   if (!filename || !/\.(png|jpe?g|webp|jpg)$/i.test(filename)) {
     throw new Error(`Draft pool image path is invalid. Could not extract valid filename from: ${urlString}`);
@@ -299,9 +298,31 @@ export async function clonePoolImageToUniqueFile(poolImageUrl) {
   const crypto = await import("node:crypto");
   const uploadDir = path.join(process.cwd(), "public", "ai-generated");
   let sourcePath = path.join(uploadDir, filename);
-  try {
-    await fs.access(sourcePath);
-  } catch {
+
+  let buffer;
+  let useFallback = false;
+
+  if (urlString.startsWith("http://") || urlString.startsWith("https://")) {
+    try {
+      const response = await fetch(urlString);
+      if (response.ok) {
+        buffer = Buffer.from(await response.arrayBuffer());
+      } else {
+        useFallback = true;
+      }
+    } catch {
+      useFallback = true;
+    }
+  } else {
+    try {
+      await fs.access(sourcePath);
+      buffer = await fs.readFile(sourcePath);
+    } catch {
+      useFallback = true;
+    }
+  }
+
+  if (useFallback) {
     const fallbackFiles = [
       "ai-1780375616027-825dbe7f4b9e.png",
       "ai-1780377295119-733654541932.png",
@@ -321,9 +342,10 @@ export async function clonePoolImageToUniqueFile(poolImageUrl) {
       throw new Error("No test draft image is available.");
     }
     sourcePath = path.join(uploadDir, fallback);
+    buffer = await fs.readFile(sourcePath);
   }
-  const buffer = await fs.readFile(sourcePath);
-  const extension = sourcePath.split(".").pop() || "jpg";
+
+  const extension = filename.split(".").pop() || "png";
   const token = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
   const nextFilename = `ai-${Date.now()}-${token}.${extension}`;
 

@@ -13,6 +13,7 @@ export async function action({ request }) {
   const { getAiImageGenerations } = await import("../services/metaobjects.server");
   const { saveGeneratedImageToPublicUrl, clonePoolImageToUniqueFile } = await import("../services/shopify-media.server");
   const db = (await import("../db.server")).default;
+  const FREE_GENERATION_LIMIT = 3;
 
   if (request.method === "OPTIONS") return optionsResponse();
 
@@ -122,16 +123,25 @@ export async function action({ request }) {
     }
 
     const customerLimit = customer?.generationLimit;
-    if (customer && Number.isInteger(customerLimit)) {
+    if (customer && isLiveGeneration()) {
+      const limit = Number.isInteger(customerLimit)
+        ? customerLimit
+        : FREE_GENERATION_LIMIT;
       const gens = await getAiImageGenerations(adminClient, {
         shopId: shop.id,
         customerId: customer.id,
+        customerEmail: cleanEmail,
       });
       const used = gens.length;
-      if (used >= customerLimit) {
+      if (used >= limit) {
         return corsJson({
           success: false,
-          error: "Your image generation limit has been reached.",
+          error:
+            "You have used all free generations. Upgrade to create more artwork.",
+          generationUsage: {
+            used,
+            limit,
+          },
         });
       }
     }
@@ -301,7 +311,14 @@ export async function action({ request }) {
     });
   }
   function isMissingShopifySessionError(error) {
-    return String(error?.message || error).includes("Could not find a session");
+    const message = String(error?.message || error);
+    return (
+      message.includes("Could not find a session") ||
+      message.includes("No session found") ||
+      message.includes("MissingSessionTableError") ||
+      message.includes("session table does not exist") ||
+      message.includes("Prisma session table does not exist")
+    );
   }
 
   function storefrontImageUrl(imageUrl, apiBase) {

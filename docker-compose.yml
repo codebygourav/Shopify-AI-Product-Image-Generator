@@ -1,14 +1,11 @@
 services:
   web:
-    image: shopify-ai-product-image-generator-web:latest
     pull_policy: build
     build:
       context: .
       dockerfile: Dockerfile
-      cache_from:
-        - shopify-ai-product-image-generator-web:latest
     container_name: shopify-ai-app
-    command: sh -c "npm run start"
+    command: sh -c "npx prisma db push && npm run start"
     restart: always
     ports:
       - "8877:3000"
@@ -41,6 +38,8 @@ services:
       - MYSQL_DATABASE=${MYSQL_DB:-ai_image_manager}
     volumes:
       - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
     healthcheck:
       test:
         [
