@@ -56,12 +56,6 @@
 
     <!-- Step 1: Prompt Setup Form -->
     <div class="aim-prompt-content">
-      <div class="aim-prompt-panel-head">
-        <p>Describe your vision</p>
-        <h2>Generate your own image</h2>
-        <span>Describe the image you want to create, then choose orientation and style before generating.</span>
-      </div>
-
       <!-- Prompt textarea field -->
       <label class="aim-field">
         <span class="aim-setup-label">Describe your vision</span>
@@ -266,24 +260,85 @@
     {% endif %}
   </div>
 
-  <div class="aim-studio-benefits" aria-label="Artwork benefits">
-    <div class="aim-studio-benefit">
+<div class="aim-studio-benefits" aria-label="Artwork benefits">
+
+  <div class="aim-studio-benefit">
+
+    <div class="benefit-icon">
+      <!-- AI Sparkles -->
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"
+          stroke="currentColor" stroke-width="1.5"/>
+        <path d="M19 15L19.8 18.2L23 19L19.8 19.8L19 23L18.2 19.8L15 19L18.2 18.2L19 15Z"
+          stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div>
       <strong>AI-Powered Creation</strong>
       <p>Advanced AI models bring your ideas to life.</p>
     </div>
-    <div class="aim-studio-benefit">
+
+  </div>
+
+
+  <div class="aim-studio-benefit">
+
+    <div class="benefit-icon">
+      <!-- Magic Wand -->
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M15 4L20 9L9 20L4 15L15 4Z"
+          stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6 3V6M3 6H6M18 18V21M15 21H18"
+          stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div>
       <strong>Unique & Personalized</strong>
       <p>Tailored artwork that matches your style.</p>
     </div>
-    <div class="aim-studio-benefit">
+
+  </div>
+
+
+  <div class="aim-studio-benefit">
+
+    <div class="benefit-icon">
+      <!-- Diamond -->
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M6 3H18L22 9L12 21L2 9L6 3Z"
+          stroke="currentColor" stroke-width="1.5"/>
+        <path d="M2 9H22M9 3L7 9L12 21L17 9L15 3"
+          stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div>
       <strong>High Quality Output</strong>
       <p>Museum-grade quality for your space.</p>
     </div>
-    <div class="aim-studio-benefit">
+
+  </div>
+
+
+  <div class="aim-studio-benefit">
+
+    <div class="benefit-icon">
+      <!-- Infinity -->
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M18 8C15 8 12 16 9 16C6 16 4 14 4 12C4 10 6 8 9 8C12 8 15 16 18 16C21 16 22 14 22 12C22 10 21 8 18 8Z"
+          stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <div>
       <strong>Endless Possibilities</strong>
       <p>From concepts to masterpieces in seconds.</p>
     </div>
+
   </div>
+
 </div>
 
 {% if block.settings.show_community_gallery %}

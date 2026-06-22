@@ -1,4 +1,3 @@
-2026-06-22T05:05:12.746Z
-Error: Prisma session table does not exist. This could happen for a few reasons, see https://github.com/Shopify/shopify-app-js/tree/main/packages/apps/session-storage/shopify-app-session-storage-prisma#troubleshooting for more information
-Stack: Error: Prisma session table does not exist. This could happen for a few reasons, see https://github.com/Shopify/shopify-app-js/tree/main/packages/apps/session-storage/shopify-app-session-storage-prisma#troubleshooting for more information
-    at /Users/apple/Downloads/ai-image-manager/node_modules/@shopify/src/prisma.ts:55:15
+2026-06-22T11:43:35.934Z
+Loader Error: undefined
+Stack: undefined
