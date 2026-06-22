@@ -15,6 +15,10 @@ docker compose build --no-cache web
 docker compose up -d
 docker compose logs -f web
 
+docker compose build -d
+docker compose up -d
+
+
 prisma error:
 docker compose exec web npx prisma db push
 docker compose restart web
