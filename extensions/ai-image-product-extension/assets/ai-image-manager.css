@@ -230,14 +230,14 @@ body {
   grid-template-rows: auto;
 }
 
+/* ==========================================================
+   PRODUCT STUDIO PREVIEW - RESPONSIVE
+   ========================================================== */
+
 .aim-product-studio__preview {
   position: relative;
   width: 100%;
-  height: 100% !important;
-  min-height: 700px !important;
-  max-height: 700px !important;
   aspect-ratio: auto !important;
-  /* min-height: clamp(560px, 58vw, 827px); */
   overflow: hidden;
   border: 1px solid var(--aim-line);
   border-radius: 8px;
@@ -264,6 +264,51 @@ body {
   -o-transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+/* Desktop - Default height */
+@media screen and (min-width: 1025px) {
+  .aim-product-studio__preview {
+    height: 795px !important;
+    min-height: 802px !important;
+    max-height: 790px !important;
+  }
+}
+
+/* Laptop / Small Desktop */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .aim-product-studio__preview {
+    height: 849px !important;
+    min-height: 849px !important;
+    max-height: 849px !important;
+  }
+}
+
+/* Tablet */
+@media screen and (min-width: 577px) and (max-width: 768px) {
+  .aim-product-studio__preview {
+    height: 500px !important;
+    min-height: 500px !important;
+    max-height: 500px !important;
+  }
+}
+
+/* Mobile - 700px height */
+@media screen and (max-width: 576px) {
+  .aim-product-studio__preview {
+    height: 480px !important;
+    min-height: 480px !important;
+    max-height: 480px !important;
+  }
+}
+
+/* Small Mobile */
+@media screen and (max-width: 400px) {
+  .aim-product-studio__preview {
+    height: 600px !important;
+    min-height: 600px !important;
+    max-height: 600px !important;
+  }
 }
 
 .aim-generator-empty-panel {
@@ -2209,7 +2254,7 @@ img.aim-image-error {
 
 .aim-community {
   max-width: 1820px;
-  padding: 0 50px;
+  /* padding: 0 50px; */
 }
 
 .aim-community>.aim-section-head .aim-heading {
@@ -2226,6 +2271,10 @@ img.aim-image-error {
   justify-content: flex-start;
 }
 
+/* ==========================================================
+   COMMUNITY DETAIL LAYOUT - RESPONSIVE
+   ========================================================== */
+
 .aim-community-detail__layout {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.72fr);
@@ -2233,9 +2282,42 @@ img.aim-image-error {
   align-items: start;
 }
 
+/* Tablet - 2 columns with smaller gap */
+@media screen and (max-width: 1024px) {
+  .aim-community-detail__layout {
+    /* grid-template-columns: minmax(0, 1fr) minmax(300px, 0.8fr) !important; */
+    gap: 24px !important;
+  }
+}
+
+/* Small Tablet / Large Mobile - 1.5 columns (adjust) */
+@media screen and (max-width: 768px) {
+  .aim-community-detail__layout {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 18px !important;
+  }
+}
+
+/* Mobile - 1 column */
+@media screen and (max-width: 576px) {
+  .aim-community-detail__layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+/* Alternative - Single column with max-width for better readability */
+@media screen and (max-width: 576px) {
+  .aim-community-detail__layout {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    max-width: 100% !important;
+  }
+}
+
 .aim-community-detail__media {
   position: sticky;
-  top: 96px;
+  top: 0px;
   overflow: hidden;
   border-radius: var(--aim-radius);
   background: linear-gradient(145deg, #e3dcd6, #ffffff);
@@ -2698,7 +2780,7 @@ img.aim-image-error {
 
 .aim-community-detail__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+  /* grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr); */
   gap: 30px;
   align-items: start;
 }
@@ -2871,7 +2953,7 @@ img.aim-image-error {
   height: 36px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--aim-accent);
   color: #fff;
   display: flex;
   align-items: center;
@@ -2888,7 +2970,7 @@ img.aim-image-error {
 }
 
 .aim-card-download-btn:hover {
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--aim-accent);
   color: #fff;
 }
 
@@ -2900,9 +2982,9 @@ img.aim-image-error {
 
 .aim-inspiration-card__actions button {
   min-height: 38px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--aim-accent);
   border-radius: 6px;
-  background: rgba(31, 31, 31, 0.86);
+  background: var(--aim-accent);
   color: #fff;
   cursor: pointer;
   font-size: 12px;
@@ -3778,6 +3860,7 @@ img.aim-image-error {
   --aim-preview-frame-bg: transparent;
   --aim-real-frame-color: linear-gradient(135deg, #c3a37b, #e5cda8);
   --aim-real-mat-color: #ffffff;
+  height: 849px;
 }
 
 /* Setup fields and Orientation layout */
@@ -3953,9 +4036,9 @@ img.aim-image-error {
     margin-bottom: 16px;
   }
 
-  .aim-product-studio__preview {
+  /* .aim-product-studio__preview {
     min-height: 480px !important;
-  }
+  } */
 }
 
 /* Prompt screen redesign */
@@ -6023,7 +6106,7 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
   width: 100%;
   max-width: 1820px;
   margin: 32px auto 72px;
-  padding: 0 50px;
+  /* padding: 0 50px; */
   box-sizing: border-box;
 }
 
@@ -6038,14 +6121,30 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
   display: grid;
   gap: 20px;
   align-content: start;
-  overflow-y: visible;
-  overflow-x: hidden;
+  overflow-y: auto !important;
+  /* Scroll allow, bar hide */
+  overflow-x: hidden !important;
   padding: 28px;
   border: 1px solid var(--aim-line);
   border-radius: var(--aim-radius) !important;
   background: var(--aim-panel);
   box-shadow: var(--aim-shadow);
   box-sizing: border-box;
+  height: auto;
+
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none !important;
+
+  /* Hide scrollbar for IE/Edge */
+  -ms-overflow-style: none !important;
+}
+
+/* Hide scrollbar for Chrome/Safari/Opera */
+.aim-pod-uploader__controls::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
 .aim-pod-uploader__dropzone {
@@ -6273,7 +6372,7 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
 
 @media (max-width: 989px) {
   .aim-pod-uploader {
-    padding: 0 16px;
+    /* padding: 0 16px; */
     margin: 24px auto 48px;
   }
 
