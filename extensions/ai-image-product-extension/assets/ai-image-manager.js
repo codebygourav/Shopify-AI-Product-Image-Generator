@@ -2179,13 +2179,13 @@
         const imageJson = escapeHtml(JSON.stringify(image));
         const prompt = escapeHtml(displayPrompt(image) || "Generated artwork");
         const communityLabel =
-          mode === "pinterest" ? "View community" : "Go to community";
+          mode === "pinterest" ? "Moodboard" : "Go to community";
         return `
           <article class="aim-inspiration-card" data-generation-id="${escapeHtml(image.id)}" data-ai-image-json="${imageJson}">
             <img src="${escapeHtml(toProxyImageUrl(image.imageUrl))}" alt="${prompt}" loading="lazy">
             <div class="aim-inspiration-card__actions">
-              <button type="button" data-ai-card-action="community">${communityLabel}</button>
-              <button type="button" data-ai-card-action="preview">Use for preview</button>
+              <button type="button" class="outline-button" data-ai-card-action="community">${communityLabel}</button>
+              <button type="button" class="bg-button" data-ai-card-action="preview">Use for preview</button>
             </div>
           </article>
         `;

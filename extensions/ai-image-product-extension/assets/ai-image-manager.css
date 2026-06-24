@@ -267,10 +267,21 @@ body {
 }
 
 /* Desktop - Default height */
-@media screen and (min-width: 1025px) {
+/* Big Desktop */
+@media screen and (min-width: 1400px) {
   .aim-product-studio__preview {
     height: 795px !important;
-    min-height: 802px !important;
+    min-height: 759px !important;
+    max-height: 759px !important;
+  }
+}
+
+
+/* Laptop + Tablet */
+@media screen and (width> 768px) and (width <=1400px) {
+  .aim-product-studio__preview {
+    height: 790px !important;
+    min-height: 790px !important;
     max-height: 790px !important;
   }
 }
@@ -772,7 +783,7 @@ body {
 
 .aim-product-studio.is-prompt-screen .aim-field span {
   color: #242424;
-  font-size: 18px;
+  font-size: 12px;
 }
 
 .aim-product-studio.is-prompt-screen .aim-textarea {
@@ -2980,7 +2991,17 @@ img.aim-image-error {
   transform: translateY(0);
 }
 
-.aim-inspiration-card__actions button {
+.aim-inspiration-card__actions .outline-button {
+  border: 1px solid var(--aim-accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--aim-accent);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.aim-inspiration-card__actions .bg-button {
   min-height: 38px;
   border: 1px solid var(--aim-accent);
   border-radius: 6px;
@@ -3566,7 +3587,7 @@ img.aim-image-error {
 
 .aim-product-studio.is-prompt-screen .aim-field span {
   color: #2f2f2f;
-  font-size: 18px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -4765,7 +4786,7 @@ img.aim-image-error {
   min-width: 0;
   position: static !important;
   top: auto !important;
-  min-height: 700px !important;
+  min-height: 647px !important;
   max-height: 700px !important;
 }
 
@@ -5928,7 +5949,7 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
 /* Compact reviews: initials instead of artwork thumbnails */
 .aim-reviews,
 .aim-detail-reviews {
-  max-width: 1180px;
+  max-width: 100%;
 }
 
 .aim-reviews .aim-section-head,
