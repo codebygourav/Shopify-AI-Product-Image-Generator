@@ -1,3 +1,8 @@
+:root {
+  --button-font-size: 18px;
+  --button-radius: 6px;
+}
+
 .index {
   align-items: center;
   display: flex;

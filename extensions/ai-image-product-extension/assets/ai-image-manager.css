@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 
+:root {
+  --button-font-size: 18px;
+  --button-radius: 6px;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -112,15 +117,19 @@ body {
 }
 
 .aim-studio-usage span {
-  min-height: 42px;
+  min-height: 52px;
   display: inline-flex;
   align-items: center;
   padding: 0 18px;
-  border-radius: 6px;
+  border-radius: var(--aim-radius);
   background: #f7f4f1;
   color: #111;
-  font-size: 14px;
+  font-size: var(--button-font-size);
   font-weight: 700;
+  -webkit-border-radius: var(--aim-radius);
+  -moz-border-radius: var(--aim-radius);
+  -ms-border-radius: var(--aim-radius);
+  -o-border-radius: var(--aim-radius);
 }
 
 .aim-product-studio.is-prompt-screen .aim-product-studio__panel {
@@ -162,7 +171,7 @@ body {
 }
 
 .aim-product-studio.is-editor-screen .aim-product-studio__preview[data-ai-orientation="landscape"] {
-  min-height: 0 !important;
+  min-height: 700px !important;
 }
 
 /* Prompt inputs remain visible in the left sidebar in editor mode */
@@ -805,6 +814,9 @@ body {
   border-color: #545454;
   background: #545454;
   color: #fff;
+  height: 52px;
+  font-size: var(--button-font-size);
+  font-weight: 700;
 }
 
 .aim-draft-thumbs-container {
@@ -1243,11 +1255,12 @@ body {
 .aim-chip,
 .aim-button,
 .aim-toggle {
-  min-height: 44px;
+  min-height: 52px;
   padding: 0 18px;
   border: 1px solid var(--aim-line);
   border-radius: 8px;
   background: #fff;
+  font-size: var(--button-font-size);
   color: var(--aim-ink);
   cursor: pointer;
   font-weight: 700;
@@ -2237,8 +2250,8 @@ img.aim-image-error {
 
 .aim-community-detail__panel .aim-modal__actions button {
   width: 100%;
-  min-height: 48px;
-  font-size: 14px;
+  min-height: 52px;
+  font-size: var(--button-font-size);
 }
 
 .aim-modal__review {
@@ -2632,7 +2645,7 @@ img.aim-image-error {
 /* Pinterest Grid Layout */
 .aim-pinterest-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   width: 100%;
   margin-top: 28px;
@@ -2642,19 +2655,33 @@ img.aim-image-error {
 
 @media (max-width: 1200px) {
   .aim-pinterest-grid {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .aim-pinterest-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
   }
 }
 
-@media (max-width: 480px) {
+/* Mobile */
+@media (max-width: 600px) {
+  .aim-pinterest-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+  }
+}
+
+
+/* Small Mobile */
+@media (max-width: 380px) {
   .aim-pinterest-grid {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
 
@@ -2927,15 +2954,26 @@ img.aim-image-error {
   margin: 0 0 18px;
   overflow: hidden;
   break-inside: avoid;
-  border-radius: 8px;
+  border-radius: 4px;
   background: #fff;
   box-shadow: 0 10px 28px rgba(31, 27, 22, 0.08);
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -o-border-radius: 4px;
 }
+
 
 .aim-inspiration-card img {
   width: 100%;
   height: auto;
   display: block;
+  transition: transform 0.4s ease, filter 0.3s ease;
+}
+
+.aim-inspiration-card:hover img {
+  filter: brightness(0.8);
+  transform: scale(1.02);
 }
 
 .aim-inspiration-card__actions {
@@ -2953,6 +2991,12 @@ img.aim-image-error {
 
 .aim-inspiration-card__actions button:only-child {
   grid-column: span 2;
+  height: 52px;
+  font-size: var(--button-font-size);
+  font-weight: 700;
+  background: var(--aim-accent);
+  color: #fff;
+  border: none;
 }
 
 .aim-card-download-btn {
@@ -2992,24 +3036,28 @@ img.aim-image-error {
 }
 
 .aim-inspiration-card__actions .outline-button {
-  border: 1px solid var(--aim-accent);
-  border-radius: 6px;
-  background: transparent;
+  background: #fff;
   color: var(--aim-accent);
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--button-font-size);
+  font-weight: 700;
+  border: none;
+  min-height: 52px;
 }
 
 .aim-inspiration-card__actions .bg-button {
-  min-height: 38px;
+  min-height: 52px;
   border: 1px solid var(--aim-accent);
-  border-radius: 6px;
+  border-radius: var(--button-radius);
   background: var(--aim-accent);
   color: #fff;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--button-font-size);
+  font-weight: 700;
+  -webkit-border-radius: var(--button-radius);
+  -moz-border-radius: var(--button-radius);
+  -ms-border-radius: var(--button-radius);
+  -o-border-radius: var(--button-radius);
 }
 
 @media (max-width: 960px) {
@@ -3427,6 +3475,8 @@ img.aim-image-error {
   border-color: var(--aim-line);
   border-radius: var(--aim-radius-sm);
   box-shadow: none;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .aim-product-studio__panel,
@@ -3486,6 +3536,8 @@ img.aim-image-error {
   border: 1px solid var(--aim-line);
   background: #fff;
 }
+
+
 
 .aim-prompt-content {
   display: grid;
@@ -3780,6 +3832,14 @@ img.aim-image-error {
 
   .aim-product-studio.is-prompt-screen .aim-prompt-tools {
     grid-template-columns: 1fr;
+  }
+
+  .aim-community-detail__panel .aim-modal__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 10px;
   }
 }
 
@@ -4093,7 +4153,7 @@ img.aim-image-error {
 }
 
 .aim-product-studio.is-prompt-screen .aim-studio-title {
-  font-size: clamp(28px, 2.2vw, 38px);
+  font-size: clamp(28px, 2.2vw, 50px);
   color: #282421;
 }
 
@@ -4108,17 +4168,18 @@ img.aim-image-error {
 
 .aim-product-studio.is-prompt-screen .aim-studio-usage span {
   min-height: 52px;
-  /* width: 206px; */
+  /*width: 206px;
+  */
   padding: 0 14px;
   border: 1px solid rgba(39, 35, 32, 0.08);
-  border-radius: 6px;
+  border-radius: var(--button-radius);
   background: #fff;
-  font-size: 18px;
+  font-size: var(--button-font-size);
   font-weight: 700;
-  -webkit-border-radius: 6px;
-  -moz-border-radius: 6px;
-  -ms-border-radius: 6px;
-  -o-border-radius: 6px;
+  -webkit-border-radius: var(--button-radius);
+  -moz-border-radius: var(--button-radius);
+  -ms-border-radius: var(--button-radius);
+  -o-border-radius: var(--button-radius);
 }
 
 .aim-button--upgrade {
@@ -4130,7 +4191,7 @@ img.aim-image-error {
   background: #1e1c1b;
   color: #fff;
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--button-font-size);
   font-weight: 700;
 }
 
@@ -4278,7 +4339,7 @@ img.aim-image-error {
   background: #1e1c1b;
   border-color: #1e1c1b;
   color: #fff;
-  font-size: 14px;
+  font-size: var(--button-font-size);
   font-weight: 700;
 }
 
@@ -4354,7 +4415,7 @@ img.aim-image-error {
   background: #1e1c1b;
   color: #fff;
   text-decoration: none;
-  font-size: 15px;
+  font-size: var(--button-font-size);
   font-weight: 700;
   white-space: nowrap;
   width: 206px;
@@ -4783,7 +4844,7 @@ img.aim-image-error {
 .aim-product-studio.is-prompt-screen .aim-product-studio__media {
   display: grid !important;
   grid-column: auto;
-  min-width: 0;
+  min-width: 100% !important;
   position: static !important;
   top: auto !important;
   min-height: 647px !important;
@@ -4867,6 +4928,14 @@ img.aim-image-error {
 
 @media (max-width: 700px) {
 
+
+  .aim-product-studio.is-prompt-screen .aim-product-studio__panel {
+    height: 100% !important;
+    min-height: 510px !important;
+    max-height: 623px !important;
+
+  }
+
   .shopify-app-block,
   .shopify-block {
     width: 100% !important;
@@ -4884,7 +4953,7 @@ img.aim-image-error {
     flex-direction: column !important;
     gap: 14px !important;
     margin: 20px auto 28px !important;
-    padding: 15px 15px 84px !important;
+    padding: 15px 15px 38px !important;
     background: #f8f5f1;
     width: 100% !important;
     max-width: 100% !important;
@@ -5333,7 +5402,7 @@ img.aim-image-error {
 @media (max-width: 768px) {
   .aim-community {
     padding: 0px !important;
-    margin: 28px auto !important;
+    margin: 6px auto !important;
     overflow: hidden;
   }
 
@@ -5763,11 +5832,12 @@ img.aim-image-error {
 
 .aim-review-form .aim-button,
 .aim-review-form button[type="submit"] {
-  min-height: 46px;
+  min-height: 52px;
   background: #545454;
   border-color: #545454;
   color: #fff;
   box-shadow: none;
+  font-size: var(--button-font-size);
 }
 
 .aim-star-input {
@@ -6068,10 +6138,10 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
 .aim-review-form button[type="submit"] {
   justify-self: start;
   width: auto;
-  min-width: 160px;
-  min-height: 38px;
+  min-width: 206px;
+  min-height: 52px;
   padding: 0 18px;
-  font-size: 13px;
+  font-size: var(--button-font-size);
 }
 
 @media (max-width: 700px) {

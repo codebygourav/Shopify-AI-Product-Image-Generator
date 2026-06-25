@@ -2151,8 +2151,8 @@
               </svg>
             </button>
             <div class="aim-inspiration-card__actions">
-              <button type="button" data-ai-card-action="details">View Details</button>
-              ${image.visibility !== "PUBLIC" || image.moderationStatus !== "APPROVED" ? '<button type="button" data-ai-card-action="request-public">Request public</button>' : ""}
+              <button type="button" class="outline-button" data-ai-card-action="details">View Details</button>
+              ${image.visibility !== "PUBLIC" || image.moderationStatus !== "APPROVED" ? '<button type="button" class="bg-button" data-ai-card-action="request-public">Request public</button>' : ""}
             </div>
           </article>
         `;
