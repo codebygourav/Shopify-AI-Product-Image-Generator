@@ -2675,7 +2675,7 @@
               : [];
             return `
                         <label>
-                          <span>${escapeHtml(group.name)} ritik</span>
+                          <span>${escapeHtml(group.name)}</span>
                           <select data-ai-community-option data-ai-option-name="${escapeHtml(group.name)}">
                             ${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}
                           </select>

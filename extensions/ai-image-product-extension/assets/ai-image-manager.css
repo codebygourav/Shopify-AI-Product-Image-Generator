@@ -292,9 +292,9 @@ body {
 /* Big Desktop */
 @media screen and (min-width: 1400px) {
   .aim-product-studio__preview {
-    height: 795px !important;
-    min-height: 759px !important;
-    max-height: 759px !important;
+    height: 100% !important;
+    min-height: 804px !important;
+    max-height: 804px !important;
   }
 }
 
@@ -2495,8 +2495,13 @@ img.aim-image-error {
   background: #fff;
   color: #545454;
   cursor: pointer;
-  font-size: 28px;
+  font-size: 51px;
   line-height: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 12px !important;
+  /* z-index: 10001; */
 }
 
 .aim-modal__close {
@@ -6218,7 +6223,17 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
   display: grid;
   grid-template-columns: minmax(360px, 0.44fr) minmax(0, 1fr);
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.aim-pod-uploader__preview-panel {
+  height: 100%;
+  display: flex;
+}
+
+.aim-product-studio__preview {
+  width: 100%;
+  flex: 1;
 }
 
 .aim-pod-uploader__controls {
