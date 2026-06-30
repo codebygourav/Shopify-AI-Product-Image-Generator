@@ -1,0 +1,48 @@
+name: CI/CD Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-shopify:
+    name: Deploy Shopify App Extensions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Deploy Extensions
+        if: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN != '' }}
+        run: npm run deploy -- --non-interactive
+        env:
+          SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN }}
+
+  deploy-vps:
+    name: Deploy App Server to Hostinger
+    runs-on: ubuntu-latest
+    needs: deploy-shopify
+    if: always() && (needs.deploy-shopify.result == 'success' || needs.deploy-shopify.result == 'skipped')
+    steps:
+      - name: Execute Remote SSH Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT || '22' }}
+          script: |
+            cd /docker/shopify-ai-product-image-generator
+            git pull origin main
+            docker compose build --no-cache web
+            docker compose up -d

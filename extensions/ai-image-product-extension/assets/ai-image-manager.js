@@ -1083,7 +1083,16 @@
           );
           applyPreviewPresentation(preview, finalSelections);
 
-          setStudioStep(root, "preview");
+          const isMobile = window.innerWidth <= 700;
+          if (isMobile) {
+            setStudioStep(root, "editor");
+            renderSizeSelector(root, preview, finalSelections);
+            syncEditorControls(root, finalSelections);
+            applyPreviewPresentation(preview, finalSelections);
+            syncSelectionsToNativeForm(form, finalSelections);
+          } else {
+            setStudioStep(root, "preview");
+          }
           setPromptEditMode(root, false);
           status.textContent =
             "Artwork generated successfully. Choose to edit, reset, or finalize your frame options.";
@@ -1135,7 +1144,16 @@
             return;
           }
           if (target === "preview" && selectedImage) {
-            setStudioStep(root, "preview");
+            const isMobile = window.innerWidth <= 700;
+            if (isMobile) {
+              setStudioStep(root, "editor");
+              renderSizeSelector(root, preview, finalSelections);
+              syncEditorControls(root, finalSelections);
+              applyPreviewPresentation(preview, finalSelections);
+              syncSelectionsToNativeForm(form, finalSelections);
+            } else {
+              setStudioStep(root, "preview");
+            }
           }
         });
       });
@@ -1237,7 +1255,16 @@
 
       // Step 3 Back Button
       editorBackBtn?.addEventListener("click", () => {
-        setStudioStep(root, "preview");
+        const isMobile = window.innerWidth <= 700;
+        if (isMobile) {
+          if (previewEditToggleBtn) {
+            previewEditToggleBtn.click();
+          } else {
+            setStudioStep(root, "prompt");
+          }
+        } else {
+          setStudioStep(root, "preview");
+        }
       });
 
       // Step 3 Checkout Button (Add to Cart)
@@ -1319,7 +1346,16 @@
         root._setFinalSelections(finalSelections);
 
         toggleGeneratorImageSections(root, true);
-        setStudioStep(root, "preview");
+        const isMobile = window.innerWidth <= 700;
+        if (isMobile) {
+          setStudioStep(root, "editor");
+          renderSizeSelector(root, preview, finalSelections);
+          syncEditorControls(root, finalSelections);
+          applyPreviewPresentation(preview, finalSelections);
+          syncSelectionsToNativeForm(form, finalSelections);
+        } else {
+          setStudioStep(root, "preview");
+        }
         if (tweakPromptTextarea)
           tweakPromptTextarea.value = displayPrompt(selectedImage);
 
@@ -1337,24 +1373,43 @@
     const sizePlaceholder = root.querySelector("[data-ai-size-placeholder]");
     if (!sizePlaceholder) return;
 
-    const sizes = sizeGroups()[finalSelections.orientation || "portrait"] || [];
-    if (!sizes.some((s) => s.value === finalSelections.size)) {
-      finalSelections.size = sizes[0]?.value || "";
+    const groups = sizeGroups();
+    const orientations = ["portrait", "landscape", "square"];
+
+    const allSizes = [
+      ...groups.portrait,
+      ...groups.landscape,
+      ...groups.square,
+    ];
+    if (!allSizes.some((s) => s.value === finalSelections.size)) {
+      finalSelections.size = allSizes[0]?.value || "";
+      finalSelections.orientation = orientationForSize(finalSelections.size);
     }
 
     sizePlaceholder.innerHTML = `
       <label class="aim-select-field">
         <span>Dimensions</span>
         <select data-ai-size-select>
-          ${sizes
-        .map(
-          (size) => `
-            <option value="${size.value}" ${size.value === finalSelections.size ? "selected" : ""}>
-              ${size.label}
-            </option>
-          `,
-        )
-        .join("")}
+          ${orientations
+            .map((orientation) => {
+              const sizes = groups[orientation] || [];
+              if (!sizes.length) return "";
+              const label = orientation.charAt(0).toUpperCase() + orientation.slice(1);
+              return `
+                <optgroup label="${label}">
+                  ${sizes
+                    .map(
+                      (size) => `
+                        <option value="${size.value}" ${size.value === finalSelections.size ? "selected" : ""}>
+                          ${size.label}
+                        </option>
+                      `,
+                    )
+                    .join("")}
+                </optgroup>
+              `;
+            })
+            .join("")}
         </select>
       </label>
     `;
@@ -2317,16 +2372,16 @@
       <article class="aim-review ${isReply ? "is-reply" : ""}">
         <span class="aim-review__avatar" aria-hidden="true">${escapeHtml(creatorInitial(author))}</span>
         <div class="aim-review__content">
-        <div class="aim-review__meta">
-
-          <strong>${escapeHtml(author)}</strong>
-                  <div class="aim-stars">
-        ${"★".repeat(Number(review.rating) || 5)}</div>
-        </div>
-          ${parsedReply ? `<small class="aim-review__reply-label">Reply to ${escapeHtml(parsedReply.target)}</small>` : ""}
-          <p>${escapeHtml(body)}</p>
-          <small>${escapeHtml(shortTitle(prompt))}</small>
-          <button type="button" class="aim-review-reply" data-ai-review-reply="${escapeHtml(author)}">Reply</button>
+          <div class="aim-review__meta">
+            <strong class="aim-review__author">${escapeHtml(author)}</strong>
+            <div class="aim-stars">${"★".repeat(Number(review.rating) || 5)}</div>
+          </div>
+          ${parsedReply ? `<span class="aim-review__reply-label">Reply to ${escapeHtml(parsedReply.target)}</span>` : ""}
+          <div class="aim-review__body-text">${escapeHtml(body)}</div>
+          <div class="aim-review__footer-meta">
+            <span class="aim-review__prompt-title">${escapeHtml(shortTitle(prompt))}</span>
+            <button type="button" class="aim-review-reply" data-ai-review-reply="${escapeHtml(author)}">Reply</button>
+          </div>
         </div>
       </article>
     `;
@@ -3796,6 +3851,16 @@
       promptContainer.hidden = step !== "prompt" && step !== "generating";
     if (previewContainer) previewContainer.hidden = step !== "preview";
     if (editorContainer) editorContainer.hidden = step !== "editor";
+
+    const editorBackBtn = root.querySelector("[data-ai-editor-back]");
+    if (editorBackBtn) {
+      const isMobile = window.innerWidth <= 700;
+      if (isMobile) {
+        editorBackBtn.textContent = "Edit Prompt";
+      } else {
+        editorBackBtn.textContent = "Back";
+      }
+    }
 
     root.querySelectorAll("[data-ai-mobile-tab]").forEach((tab) => {
       const target = tab.dataset.aiMobileTab;
