@@ -1183,6 +1183,125 @@ body {
   border: 0;
 }
 
+/* ======================================== */
+/* 🔥 AI GENERATOR - DROPDOWN ARROWS */
+/* ======================================== */
+
+/* ----- 1. Effect Dropdown ----- */
+.aim-effect-select-field {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.aim-effect-select-field select {
+  width: 100%;
+  padding: 10px 40px 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.aim-effect-select-field::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
+  z-index: 1;
+}
+
+/* ----- 2. Frame Select (Editor) ----- */
+.aim-select-field {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.aim-select-field span {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.aim-select-field select {
+  width: 100%;
+  padding: 10px 40px 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.aim-select-field::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 62%;
+  /* Label + select ke beech */
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
+  z-index: 1;
+}
+
+/* ----- Common - Hover & Focus ----- */
+.aim-effect-select-field select:hover,
+.aim-select-field select:hover {
+  border-color: #999;
+}
+
+.aim-effect-select-field select:focus,
+.aim-select-field select:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ----- Common - IE/Edge ----- */
+.aim-effect-select-field select::-ms-expand,
+.aim-select-field select::-ms-expand {
+  display: none !important;
+}
+
+/* ----- Common - Chrome/Safari ----- */
+.aim-effect-select-field select::-webkit-calendar-picker-indicator,
+.aim-select-field select::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .aim-option-fieldset legend {
   margin: 0 0 4px;
   color: #242424;
@@ -6458,6 +6577,91 @@ html[data-ai-cart-line-images="ready"] [class*="details"] [hidden] {
   width: 0 !important;
   height: 0 !important;
   background: transparent !important;
+}
+
+.aim-pod-uploader__option-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.aim-pod-uploader__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+/* 🔽 WRAPPER - हर select के आसपास */
+.aim-pod-uploader__select-wrapper {
+  position: relative;
+  display: block;
+}
+
+/* select styling */
+.aim-pod-uploader__select {
+  width: 100%;
+  padding: 10px 40px 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+
+  /* Native arrow हटाओ */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* 🔽 ARROW - दोनों ड्रॉपडाउन पर एक जैसा */
+.aim-pod-uploader__select-wrapper::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
+}
+
+/* Focus state */
+.aim-pod-uploader__select:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Frame Buttons Styling */
+.aim-pod-uploader__frame-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.aim-pod-uploader__frame-btn {
+  padding: 8px 20px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.3s ease;
+}
+
+.aim-pod-uploader__frame-btn:hover {
+  border-color: #999;
+}
+
+.aim-pod-uploader__frame-btn.is-active {
+  border-color: #000;
+  background: #000;
+  color: #fff;
 }
 
 .aim-pod-uploader__dropzone {

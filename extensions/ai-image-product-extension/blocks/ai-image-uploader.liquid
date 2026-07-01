@@ -38,38 +38,43 @@
       </div>
 
       <!-- Size Selection -->
-      <div class="aim-pod-uploader__option-group">
-        <label for="aim-size-select" class="aim-pod-uploader__label">Select Print Size</label>
-        <select id="aim-size-select" class="aim-pod-uploader__select">
-          <option value="12x16" data-orientation="portrait">12 x 16 inch (Portrait)</option>
-          <option value="16x12" data-orientation="landscape">16 x 12 inch (Landscape)</option>
-          <option value="12x12" data-orientation="square">12 x 12 inch (Square)</option>
-          <option value="8x12" data-orientation="portrait">8 x 12 inch (Portrait)</option>
-          <option value="12x8" data-orientation="landscape">12 x 8 inch (Landscape)</option>
-          <option value="16x20" data-orientation="portrait">16 x 20 inch (Portrait)</option>
-          <option value="20x16" data-orientation="landscape">20 x 16 inch (Landscape)</option>
-        </select>
-      </div>
+      <!-- Size Selection -->
+<div class="aim-pod-uploader__option-group">
+  <label for="aim-size-select" class="aim-pod-uploader__label">Select Print Size</label>
+  <div class="aim-pod-uploader__select-wrapper">
+    <select id="aim-size-select" class="aim-pod-uploader__select">
+      <option value="12x16" data-orientation="portrait">12 x 16 inch (Portrait)</option>
+      <option value="16x12" data-orientation="landscape">16 x 12 inch (Landscape)</option>
+      <option value="12x12" data-orientation="square">12 x 12 inch (Square)</option>
+      <option value="8x12" data-orientation="portrait">8 x 12 inch (Portrait)</option>
+      <option value="12x8" data-orientation="landscape">12 x 8 inch (Landscape)</option>
+      <option value="16x20" data-orientation="portrait">16 x 20 inch (Portrait)</option>
+      <option value="20x16" data-orientation="landscape">20 x 16 inch (Landscape)</option>
+    </select>
+  </div>
+</div>
 
-      <!-- Frame Selection -->
-      <div class="aim-pod-uploader__option-group">
-        <label class="aim-pod-uploader__label">Frame Style</label>
-        <div class="aim-pod-uploader__frame-buttons">
-          <button type="button" class="aim-pod-uploader__frame-btn is-active" data-frame-color="oak" data-label="Wood">Wood</button>
-          <button type="button" class="aim-pod-uploader__frame-btn" data-frame-color="black" data-label="Black">Black</button>
-          <button type="button" class="aim-pod-uploader__frame-btn" data-frame-color="white" data-label="White">White</button>
-        </div>
-      </div>
+<!-- Frame Selection -->
+<div class="aim-pod-uploader__option-group">
+  <label class="aim-pod-uploader__label">Frame Style</label>
+  <div class="aim-pod-uploader__frame-buttons">
+    <button type="button" class="aim-pod-uploader__frame-btn is-active" data-frame-color="oak" data-label="Wood">Wood</button>
+    <button type="button" class="aim-pod-uploader__frame-btn" data-frame-color="black" data-label="Black">Black</button>
+    <button type="button" class="aim-pod-uploader__frame-btn" data-frame-color="white" data-label="White">White</button>
+  </div>
+</div>
 
-      <!-- Print Type Selection -->
-      <div class="aim-pod-uploader__option-group">
-        <label for="aim-paper-select" class="aim-pod-uploader__label">Print Type</label>
-        <select id="aim-paper-select" class="aim-pod-uploader__select">
-          <option value="Premium Matte Paper">Premium Matte Paper</option>
-          <option value="Fine Art Paper">Fine Art Paper</option>
-          <option value="Canvas Wrap">Canvas Wrap</option>
-        </select>
-      </div>
+<!-- Print Type Selection -->
+<div class="aim-pod-uploader__option-group">
+  <label for="aim-paper-select" class="aim-pod-uploader__label">Print Type</label>
+  <div class="aim-pod-uploader__select-wrapper">
+    <select id="aim-paper-select" class="aim-pod-uploader__select">
+      <option value="Premium Matte Paper">Premium Matte Paper</option>
+      <option value="Fine Art Paper">Fine Art Paper</option>
+      <option value="Canvas Wrap">Canvas Wrap</option>
+    </select>
+  </div>
+</div>
 
       <!-- Action Button -->
       <button type="button" class="aim-button aim-button--primary aim-pod-uploader__submit" id="aim-submit-btn" disabled>
