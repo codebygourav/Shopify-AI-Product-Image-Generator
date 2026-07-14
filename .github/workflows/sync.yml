@@ -20,5 +20,5 @@ jobs:
         env:
           SYNC_PAT: ${{ secrets.SYNC_PAT }}
         run: |
-          git remote add destination "https://x-access-token:${SYNC_PAT}@github.com/CodeSproutX/-Shopify-AI-Product-Image-Generator.git"
+          git remote add destination "https://${SYNC_PAT}@github.com/CodeSproutX/-Shopify-AI-Product-Image-Generator.git"
           git push --force destination main:main
