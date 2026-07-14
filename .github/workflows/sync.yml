@@ -1,0 +1,21 @@
+name: Sync to Destination Repository
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    name: Sync Branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Force Push to Destination Repository
+        run: |
+          git remote add destination "https://x-access-token:${{ secrets.SYNC_PAT }}@github.com/CodeSproutX/-Shopify-AI-Product-Image-Generator.git"
+          git push --force destination main:main
