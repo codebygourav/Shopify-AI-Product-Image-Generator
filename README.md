@@ -112,20 +112,6 @@ TEST_IMAGE_URL=https://dummyimage.com/1024x1024/7d7355/ffffff.png&text=Generated
 
 ---
 
-## 🔄 GitHub Repository Auto-Sync Action
-
-This repository has a built-in GitHub Action workflow (`.github/workflows/sync.yml`) to sync all pushes to the main branch over to:
-`https://github.com/CodeSproutX/-Shopify-AI-Product-Image-Generator.git`
-
-### Set Up Sync in your GitHub Settings:
-1. Go to your source repository on GitHub.
-2. Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
-3. Click **New repository secret**.
-4. Set name as **`SYNC_PAT`**.
-5. Set value as your GitHub Personal Access Token (PAT) with write repository permissions to the destination repository (`CodeSproutX/-Shopify-AI-Product-Image-Generator`).
-
----
-
 ## 🗒️ Features Detail
 
 - **Shopify React Router app shell**.
