@@ -14,8 +14,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Force Push to Destination Repository
+        env:
+          SYNC_PAT: ${{ secrets.SYNC_PAT }}
         run: |
-          git remote add destination "https://x-access-token:${{ secrets.SYNC_PAT }}@github.com/CodeSproutX/-Shopify-AI-Product-Image-Generator.git"
+          git remote add destination "https://x-access-token:${SYNC_PAT}@github.com/CodeSproutX/-Shopify-AI-Product-Image-Generator.git"
           git push --force destination main:main
